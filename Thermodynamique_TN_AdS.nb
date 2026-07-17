@@ -1,0 +1,1526 @@
+(* ::Package:: *)
+
+(* ::Title:: *)
+(*Thermodynamique des Trous Noirs Anti-de Sitter*)
+
+
+(* ::Subtitle:: *)
+(*Etude thermodynamique compl\[EGrave]te \[Dash] Calcul symbolique + Figures *)
+(*Stage S4 \[Dash] LPHEAG, Universit\[EAcute] Cadi Ayyad, Marrakech*)
+(*Auteur : Hamza Alioua \[Dash] Encadrant : Dr. S. Iraoui \[Dash] Avril 2026*)
+
+
+(* ::Section::Closed:: *)
+(*0. Initialisation*)
+
+
+ClearAll["Global`*"];
+$Assumptions = {r > 0, rp > 0, M > 0, P > 0, Q > 0, l > 0,
+                T > 0, \[CapitalLambda] < 0};
+
+outDir = FileNameJoin[{NotebookDirectory[], "figures"}];
+If[!DirectoryQ[outDir], CreateDirectory[outDir]];
+
+SetOptions[Plot,
+  Frame -> True, FrameStyle -> Directive[Black, 14],
+  LabelStyle -> Directive[FontFamily -> "Times New Roman", 14],
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> Thick,
+  ImageSize -> 500,
+  Background -> White
+];
+SetOptions[ParametricPlot,
+  Frame -> True, FrameStyle -> Directive[Black, 14],
+  LabelStyle -> Directive[FontFamily -> "Times New Roman", 14],
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> Thick,
+  ImageSize -> 500,
+  Background -> White
+];
+
+col = {"#2166AC", "#D6604D", "#4DAF4A", "#FF7F00", "#984EA3",
+       "#A65628", "#E41A1C", "#377EB8"};
+colorF[i_] := RGBColor @@ (IntegerDigits[
+  FromDigits[StringTake[col[[i]], {2, -1}], 16], 256, 3]/255.);
+saveFig[gr_, name_] := Module[{nbDir, path, path2, ok1, ok2},
+  If[! (StringQ[outDir] && DirectoryQ[outDir]),
+    nbDir = Quiet[NotebookDirectory[]];
+    outDir = FileNameJoin[{If[StringQ[nbDir], nbDir, Directory[]], "figures"}];
+    If[! DirectoryQ[outDir], CreateDirectory[outDir]]
+  ];
+  path  = FileNameJoin[{outDir, name <> ".pdf"}];
+  path2 = FileNameJoin[{outDir, name <> ".png"}];
+  ok1 = Quiet @ Check[Export[path,  gr, "PDF", ImageResolution -> 300], $Failed];
+  ok2 = Quiet @ Check[Export[path2, gr, "PNG", ImageResolution -> 300], $Failed];
+  If[ok1 === $Failed || ok2 === $Failed,
+    Print["  [ECHEC] " <> name <> " : Export impossible (graphique invalide ou dossier inaccessible)"],
+    Print["  [OK] " <> name <> ".pdf + .png"]
+  ];
+  gr   
+];
+
+Print["=== Initialisation compl\[EGrave]te ==="];
+Print["Dossier de sortie : ", outDir];
+
+
+(* ::Section::Closed:: *)
+(*Partie 0 : Schwarzschild classique (\[CapitalLambda] = 0)*)
+
+
+Print["\n", StringRepeat["=", 60]];
+Print["PARTIE 0 : Schwarzschild classique (\[CapitalLambda] = 0)"];
+Print[StringRepeat["=", 60]];
+
+
+(* ::Subsection::Closed:: *)
+(*D\[EAcute]rivation symbolique*)
+
+
+(* Metrique : f(r) = 1 - 2M/r *)
+fSchw[r_, Mv_] := 1 - 2 Mv/r;
+
+(* Horizon : f(r+) = 0 donne M = rp/2 *)
+solM0 = Solve[fSchw[rp, M] == 0, M][[1]];
+M0sym = M /. solM0
+Print["Masse ADM : M = ", M0sym];
+
+(* Temperature de Hawking : T = f'(r+)/(4 Pi) *)
+fPrime0 = D[fSchw[r, M0sym], r] /. r -> rp // Simplify;
+T0sym = fPrime0 / (4 Pi) // Simplify
+Print["Temp\[EAcute]rature de Hawking : T = ", T0sym];
+
+S0sym = Pi rp^2;
+Print["Entropie : S = ", S0sym];
+
+dTdr0 = D[T0sym, rp];
+C0sym = T0sym * (D[S0sym, rp] / dTdr0) // Simplify
+Print["Capacit\[EAcute] calorique : C = ", C0sym];
+Print["V\[EAcute]rification C < 0 : ", Simplify[C0sym < 0, rp > 0]];
+
+G0sym = M0sym - T0sym * S0sym // Simplify
+Print["Energie libre de Gibbs : G = ", G0sym];
+Print["V\[EAcute]rification G > 0 : ", Simplify[G0sym > 0, rp > 0]];
+
+(* Relation de Smarr (\[CapitalLambda]=0) : M = 2TS *)
+SmarrCheck0 = Simplify[2 T0sym * S0sym - M0sym]
+Print["V\[EAcute]rification Smarr (2TS - M) = ", SmarrCheck0, " \[Checkmark]"];
+
+
+(* ::Subsection::Closed:: *)
+(*Fonctions num\[EAcute]riques*)
+
+
+TFlat[rp_] := 1.0 / (4.0 Pi rp);
+MFlat[rp_] := rp / 2.0;
+SFlat[rp_] := Pi rp^2;
+CFlat[rp_] := -2.0 Pi rp^2;
+GFlat[rp_] := rp / 4.0;
+
+
+(* ::Subsection::Closed:: *)
+(*Figures*)
+
+
+g0a = Plot[TFlat[rp], {rp, 0.1, 15},
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> {colorF[1], Thick},
+  FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16],
+                 Style["T", 16]},
+  PlotLabel -> Style["Temp\[EAcute]rature de Hawking \[LongDash] Schwarzschild classique (\[CapitalLambda] = 0)", 13, Bold],
+  PlotRange -> {{0, 15}, {0, 0.5}},
+  PlotLegends -> Placed[
+    LineLegend[{colorF[1]},
+               {Style["T = 1/(4\[Pi]r\!\(\*SubscriptBox[\(+\), \(\)]\))", 12]}],
+    {Right, Top}]
+];
+saveFig[g0a, "fig00a_T_rp_flat"];
+
+g0b = Plot[MFlat[rp], {rp, 0.1, 15},
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> {colorF[2], Thick},
+  FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16], Style["M", 16]},
+  PlotLabel -> Style["Masse ADM \[LongDash] Schwarzschild classique", 13, Bold],
+  PlotLegends -> Placed[
+    LineLegend[{colorF[2]}, {Style["M = r\!\(\*SubscriptBox[\(+\), \(\)]\)/2", 12]}],
+    {Left, Top}]
+];
+saveFig[g0b, "fig00b_M_rp_flat"];
+
+g0c = Plot[SFlat[rp], {rp, 0.1, 15},
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> {colorF[3], Thick},
+  FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16], Style["S", 16]},
+  PlotLabel -> Style["Entropie de Bekenstein-Hawking \[LongDash] Schwarzschild classique", 13, Bold],
+  PlotLegends -> Placed[
+    LineLegend[{colorF[3]}, {Style["S = \[Pi]r\!\(\*SubsuperscriptBox[\(+\), \(\), \(2\)]\)", 12]}],
+    {Left, Top}]
+];
+saveFig[g0c, "fig00c_S_rp_flat"];
+
+g0d = Plot[CFlat[rp], {rp, 0.1, 15},
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> {colorF[4], Thick},
+  FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16], Style["C", 16]},
+  PlotLabel -> Style["Capacit\[EAcute] calorique \[LongDash] Schwarzschild classique (C < 0 partout)", 13, Bold],
+  PlotRange -> {{0, 15}, Automatic},
+  Epilog -> {GrayLevel[0], Dashed, Line[{{0, 0}, {15, 0}}]},
+  PlotLegends -> Placed[
+    LineLegend[{colorF[4]}, {Style["C = -2\[Pi]r\!\(\*SubsuperscriptBox[\(+\), \(\), \(2\)]\)", 12]}],
+    {Left, Bottom}]
+];
+saveFig[g0d, "fig00d_C_rp_flat"];
+
+g0e = Plot[GFlat[rp], {rp, 0.1, 15},
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> {colorF[5], Thick},
+  FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16], Style["G", 16]},
+  PlotLabel -> Style["Energie libre de Gibbs \[LongDash] Schwarzschild classique (\[CapitalLambda] = 0)", 13, Bold],
+  PlotRange -> {{0, 15}, {0, 4}},
+  Epilog -> {
+    Inset[Style["G = r\!\(\*SubscriptBox[\(+\), \(\)]\)/4 > 0 partout\n\[DoubleRightArrow] Pas de transition de phase",
+          11, Italic, GrayLevel[0.4]],
+          {7, 1.75}, Background -> LightYellow]},
+  PlotLegends -> Placed[
+    LineLegend[{colorF[5]}, {Style["G = M - TS = r\!\(\*SubscriptBox[\(+\), \(\)]\)/4", 12]}],
+    {Left, Top}]
+];
+saveFig[g0e, "fig00e_G_rp_flat"];
+
+Print["  G = r+/4 > 0 partout. C < 0 partout."];
+
+
+(* ::Section::Closed:: *)
+(*Partie I : Schwarzschild-AdS*)
+
+
+Print["\n", StringRepeat["=", 60]];
+Print["PARTIE I : Schwarzschild-AdS"];
+Print[StringRepeat["=", 60]];
+
+
+(* ::Subsection::Closed:: *)
+(*D\[EAcute]rivation symbolique*)
+
+
+(* Metrique : f(r) = 1 - 2M/r + 8 Pi P r^2 / 3  (P = -\[CapitalLambda]/(8 Pi)) *)
+fSchwAdS[r_, Mv_, Pv_] := 1 - 2 Mv/r + 8 Pi Pv r^2/3;
+
+solM1 = Solve[fSchwAdS[rp, M, P] == 0, M][[1]];
+M1sym = M /. solM1 // Simplify;
+Print["Masse (Enthalpie) : M = ", M1sym];
+
+fPrime1 = D[fSchwAdS[r, M, P], r] /. r -> rp /. solM1 // Simplify;
+T1sym = fPrime1 / (4 Pi) // Simplify;
+Print["Temp\[EAcute]rature : T = ", T1sym];
+
+(* Minimum de T : dT/dr+ = 0  donne r_min = (8 Pi P)^{-1/2} *)
+dT1dr = D[T1sym, rp];
+solRmin = Solve[dT1dr == 0 && rp > 0, rp];
+rpMin1 = rp /. solRmin[[1]] // Simplify // PowerExpand;
+Print["Rayon minimal (PTN/GTN) : r_min = ", rpMin1];
+Tmin1 = T1sym /. rp -> rpMin1 // Simplify // PowerExpand;
+Print["Temp\[EAcute]rature minimale : T_min = ", Tmin1];
+
+S1sym = Pi rp^2;
+
+G1sym = M1sym - T1sym * S1sym // Expand // Simplify;
+Print["Energie libre de Gibbs : G = ", G1sym];
+
+(* Transition de Hawking-Page : G = 0 *)
+solHP = Solve[G1sym == 0 && rp > 0, rp];
+rpHP = rp /. solHP[[-1]] // Simplify // PowerExpand;
+Print["Rayon de Hawking-Page : r_HP = ", rpHP];
+THP = T1sym /. rp -> rpHP // Simplify // PowerExpand;
+Print["Temp\[EAcute]rature de Hawking-Page : T_HP = ", THP];
+
+dT1dr2 = D[T1sym, rp];
+CP1sym = T1sym * (D[S1sym, rp] / dT1dr2) // Simplify;
+Print["Capacit\[EAcute] calorique C_P = ", CP1sym];
+
+(* Relation de Smarr etendue : M = 2TS - 2PV *)
+V1sym = 4 Pi rp^3 / 3;
+Smarr1 = Simplify[2 T1sym * S1sym - 2 P * V1sym - M1sym];
+Print["V\[EAcute]rification Smarr (2TS - 2PV - M) = ", Smarr1, " \[Checkmark]"];
+
+
+(* ::Subsection::Closed:: *)
+(*Fonctions num\[EAcute]riques*)
+
+
+TSchwAdS[rp_, Pv_] := 1.0/(4.0 Pi rp) + 2.0 Pv rp;
+MSchwAdS[rp_, Pv_] := rp/2.0 + 4.0 Pi Pv rp^3/3.0;
+SSchwAdS[rp_]      := Pi rp^2;
+GSchwAdS[rp_, Pv_] := rp/4.0 - 2.0 Pi Pv rp^3/3.0;
+CPSchwAdS[rp_, Pv_] := Module[{Tv, dTdr},
+  Tv = TSchwAdS[rp, Pv];
+  dTdr = -1.0/(4.0 Pi rp^2) + 2.0 Pv;
+  If[Abs[dTdr] < 1*^-15, Missing[], Tv * 2.0 Pi rp / dTdr]
+];
+
+pressSchw = {0.0005, 0.001, 0.002, 0.004, 0.008};
+
+
+(* ::Subsection::Closed:: *)
+(*Inversion symbolique : r\[Congruent](T,P) et G(T) explicite*)
+
+
+(* En multipliant T(r\[Congruent]) = 1/(4 \[Pi] r\[Congruent]) + 2 P r\[Congruent] par 4 \[Pi] r\[Congruent], on obtient *)
+(* le polynome quadratique de contrainte en r\[Congruent] : *)
+(*         8 \[Pi] P r\[Congruent]^2  -  4 \[Pi] T r\[Congruent]  +  1  =  0               *)
+(* Les deux racines sont reelles pour T >= T_min = Sqrt(2 P / \[Pi]). *)
+
+polyInvSAd[r_, Tv_, Pv_] := 8 Pi Pv r^2 - 4 Pi Tv r + 1;
+polyInvSAdSym = polyInvSAd[rp, T, P];
+solSAd = Solve[polyInvSAdSym == 0, rp];
+Print["Polynome de contrainte (Schw-AdS) : ", polyInvSAdSym, " = 0"];
+Print["Racines symboliques : rp = ", rp /. solSAd];
+
+(* Branches explicites comme fonctions de T et P *)
+TminSAd[Pv_] := Sqrt[2 Pv / Pi];
+
+rSmallSAd[Tv_?NumericQ, Pv_?NumericQ] := 
+  If[Tv^2 >= 2 Pv/Pi, (Tv - Sqrt[Tv^2 - 2 Pv/Pi]) / (4 Pv), Indeterminate];
+rLargeSAd[Tv_?NumericQ, Pv_?NumericQ] := 
+  If[Tv^2 >= 2 Pv/Pi, (Tv + Sqrt[Tv^2 - 2 Pv/Pi]) / (4 Pv), Indeterminate];
+
+(* G(T) explicite par substitution sur chaque branche *)
+GSmallSAd[Tv_?NumericQ, Pv_?NumericQ] := Module[{rv = rSmallSAd[Tv, Pv]},
+  If[rv === Indeterminate, Indeterminate, rv/4 - 2 Pi Pv rv^3/3]
+];
+GLargeSAd[Tv_?NumericQ, Pv_?NumericQ] := Module[{rv = rLargeSAd[Tv, Pv]},
+  If[rv === Indeterminate, Indeterminate, rv/4 - 2 Pi Pv rv^3/3]
+];
+
+
+(* ::Subsection::Closed:: *)
+(*Figures*)
+
+
+g1 = Plot[
+  Evaluate[Table[TSchwAdS[rp, P], {P, pressSchw}]],
+  {rp, 0.05, 12},
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> Table[{colorF[i], Thick}, {i, Length[pressSchw]}],
+  FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16], Style["T", 16]},
+  PlotRange -> {{0, 12}, {0, 0.25}},
+  PlotLabel -> Style["T(r\!\(\*SubscriptBox[\(+\), \(\)]\)) \[LongDash] Schwarzschild-AdS", 13, Bold],
+  (* Minima marques : r_min = (8 Pi P)^{-1/2} *)
+  Epilog -> Table[{colorF[i],
+    PointSize[0.015],
+    Point[{1/Sqrt[8 Pi pressSchw[[i]]], TSchwAdS[1/Sqrt[8 Pi pressSchw[[i]]], pressSchw[[i]]]}]},
+    {i, Length[pressSchw]}],
+  PlotLegends -> Placed[
+    LineLegend[Table[colorF[i], {i, Length[pressSchw]}],
+      Table[Style["P = " <> ToString[pressSchw[[i]]], 10], {i, Length[pressSchw]}]],
+    {Left, Top}]
+];
+saveFig[g1, "fig01_T_rp_schw"];
+
+(* Fig 2 : G(T) *)
+rpMaxTrace[Pv_] := Max @ Select[
+  rp /. NSolve[GSchwAdS[rp, Pv] == -3.0, rp, Reals],
+  Positive
+];
+g2curvesA = Table[
+  ParametricPlot[
+    {TSchwAdS[rp, pressSchw[[i]]], GSchwAdS[rp, pressSchw[[i]]]},
+    {rp, 0.05, rpMaxTrace[pressSchw[[i]]]},
+    PlotStyle -> {colorF[i], Thick},
+    PlotPoints -> 400, MaxRecursion -> 6, Exclusions -> None,
+    WorkingPrecision -> MachinePrecision, Axes -> False],
+  {i, Length[pressSchw]}
+];
+
+g2 = Legended[
+  Show[Flatten[g2curvesA],
+    Frame -> True,
+    FrameLabel -> {Style["T", 16], Style["G", 16]},
+    PlotRange -> {{0, 0.25}, {-2, 2}},
+    AspectRatio -> 0.75,
+    ImageSize -> 500,
+    PlotLabel -> Style["G(T) \[LongDash] Transition de Hawking-Page (trace direct)", 13, Bold],
+    Axes -> False,
+    Epilog -> Flatten[{
+      {GrayLevel[0], Dashed, Line[{{0, 0}, {0.25, 0}}]},
+      Table[{colorF[i], PointSize[0.015],
+        Point[{TSchwAdS[Sqrt[3.0/(8.0 Pi pressSchw[[i]])], pressSchw[[i]]], 0.0}]},
+        {i, Length[pressSchw]}]}],
+    GridLines -> Automatic,
+    GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+    Background -> White
+  ],
+  Placed[
+    LineLegend[Table[Directive[colorF[i], Thick], {i, Length[pressSchw]}],
+      Table[Style["P = " <> ToString[pressSchw[[i]]], 10], {i, Length[pressSchw]}]],
+    {Right, Top}]
+];
+saveFig[g2, "fig02_G_T_schw"];
+
+(* Echelle symlog *)
+symF[y_] := Sign[y] * Log10[1.0 + Abs[y]];
+symData[curves_] := Map[{#[[1]], symF[#[[2]]]} &, curves, {2}];
+symRescaleY[gr_] := gr /. {
+   Line[pts_] :> Line[Map[{#[[1]], symF[#[[2]]]} &, pts]],
+   Point[pts_List /; MatrixQ[pts]] :> Point[Map[{#[[1]], symF[#[[2]]]} &, pts]]
+};
+symDecades = {-100000., -10000., -1000., -100., -10., 0., 10., 100., 1000., 10000., 100000.};
+symYTicks = Table[
+   {symF[v],
+    Which[
+      v == 0., "0",
+      v == 10., "10",
+      v == -10., "-10",
+      v > 0., Superscript[10, Round[Log10[v]]],
+      True, Row[{"-", Superscript[10, Round[Log10[-v]]]}]
+    ]},
+   {v, symDecades}
+];
+symYTicksR = Map[{#[[1]], ""} &, symYTicks];   
+symYRange  = {symF[-100000.], symF[100000.]}; 
+symYGrid   = Map[symF, symDecades];
+
+(* Fig 3 : CP diverge a r_div = (8 Pi P)^{-1/2} => bi-branche + exclusion symetrique *)
+grCP1a = {};
+grCP1b = {};
+Do[
+  rdiv = 1.0/Sqrt[8.0 Pi pressSchw[[i]]];
+  eps  = 0.003;     
+  epsA = 0.0003;   
+  gl = Plot[CPSchwAdS[rp, pressSchw[[i]]], {rp, 0.1, rdiv - epsA},
+    PlotStyle -> {colorF[i], Thick}, PlotRange -> All,
+    PlotPoints -> 300, MaxRecursion -> 8, Exclusions -> None,
+    WorkingPrecision -> MachinePrecision];
+  gr2 = Plot[CPSchwAdS[rp, pressSchw[[i]]], {rp, rdiv + epsA, 15},
+    PlotStyle -> {colorF[i], Thick}, PlotRange -> All,
+    PlotPoints -> 300, MaxRecursion -> 8, Exclusions -> None,
+    WorkingPrecision -> MachinePrecision];
+  AppendTo[grCP1a, gl]; AppendTo[grCP1a, gr2];
+  glL = Plot[CPSchwAdS[rp, pressSchw[[i]]], {rp, 0.1, rdiv - eps},
+    PlotStyle -> {colorF[i], Thick},
+    PlotPoints -> 300, MaxRecursion -> 6, Exclusions -> None,
+    WorkingPrecision -> MachinePrecision];
+  grL = Plot[CPSchwAdS[rp, pressSchw[[i]]], {rp, rdiv + eps, 15},
+    PlotStyle -> {colorF[i], Thick},
+    PlotPoints -> 300, MaxRecursion -> 6, Exclusions -> None,
+    WorkingPrecision -> MachinePrecision];
+  AppendTo[grCP1b, glL]; AppendTo[grCP1b, grL],
+  {i, Length[pressSchw]}
+];
+
+divLinesFig3 = Table[{
+    Directive[colorF[i], Thin, Dotted, Opacity[0.5]],
+    InfiniteLine[{1.0/Sqrt[8.0 Pi pressSchw[[i]]], 0}, {0, 1}]
+  }, {i, Length[pressSchw]}];
+
+legendCP1 = LineLegend[
+  Table[Directive[colorF[i], Thick], {i, Length[pressSchw]}],
+  Table[Style["P = " <> ToString[pressSchw[[i]]], 9], {i, Length[pressSchw]}],
+  LegendMarkerSize -> {18, 3},
+  LegendMargins -> 2,
+  Spacings -> {0.3, 0.1}
+];
+
+panelA = Legended[
+  Show[symRescaleY /@ grCP1a,
+    Frame -> True,
+    FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16], Style["C\!\(\*SubscriptBox[\(P\), \(\)]\)", 16]},
+    PlotRange -> {{0, 15}, symYRange},
+    FrameTicks -> {{symYTicks, symYTicksR}, {Automatic, None}},
+    GridLines -> {Automatic, symYGrid},
+    GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+    Background -> White,
+    Epilog -> Flatten[{
+      {GrayLevel[0], Dashed, Line[{{0, 0}, {15, 0}}]},
+      divLinesFig3
+    }, 1],
+    PlotLabel -> Style["(a) Echelle symlog", 12, Bold],
+    ImageSize -> 370
+  ],
+  Placed[legendCP1, {0.82, 0.22}]
+];
+panelB = Legended[
+  Show[grCP1b,
+    Frame -> True,
+    FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16], Style["C\!\(\*SubscriptBox[\(P\), \(\)]\)", 16]},
+    PlotRange -> {{0, 15}, {-50, 50}},
+    GridLines -> Automatic,
+    GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+    Epilog -> Flatten[{
+      {GrayLevel[0], Dashed, Line[{{0, 0}, {15, 0}}]},
+      divLinesFig3,
+      {Inset[Style["GTN (C\!\(\*SubscriptBox[\(P\), \(\)]\) > 0, hors plage)", Italic, 10, GrayLevel[0.5]], {10, 15}]},
+      {Inset[Style["PTN (C\!\(\*SubscriptBox[\(P\), \(\)]\) < 0)", Italic, 10, GrayLevel[0.5]], {1.5, -25}]}
+    }, 1],
+    PlotLabel -> Style["(b) Zoom lin\[EAcute]aire", 12, Bold],
+    ImageSize -> 370
+  ],
+  Placed[legendCP1, {0.82, 0.22}]
+];
+g3 = GraphicsGrid[{{panelA, panelB}},
+  Spacings -> Scaled[0.03],
+  ImageSize -> 760
+];
+saveFig[g3, "fig03_Cp_rp_schw"];
+Print["  C_P diverge \[AGrave] r_div = (8\[Pi]P)^{-1/2}."];
+
+
+(* ::Section::Closed:: *)
+(*Partie II : Reissner-Nordstr\[ODoubleDot]m-AdS (Q = 1)*)
+
+
+Print["\n", StringRepeat["=", 60]];
+Print["PARTIE II : Reissner-Nordstr\[ODoubleDot]m-AdS (Q = 1)"];
+Print[StringRepeat["=", 60]];
+
+
+(* ::Subsection::Closed:: *)
+(*D\[EAcute]rivation symbolique*)
+
+
+(* Metrique : f(r) = 1 - 2M/r + Q^2/r^2 + 8 Pi P r^2 / 3 *)
+fRN[r_, Mv_, Qv_, Pv_] := 1 - 2 Mv/r + Qv^2/r^2 + 8 Pi Pv r^2/3;
+
+solM2 = Solve[fRN[rp, M, Q, P] == 0, M][[1]];
+M2sym = M /. solM2 // Simplify
+Print["Masse (Enthalpie) : M = ", M2sym];
+
+fPrime2 = D[fRN[r, M, Q, P], r] /. r -> rp /. solM2 // Simplify;
+T2sym = fPrime2 / (4 Pi) // Simplify
+Print["Temp\[EAcute]rature : T = ", T2sym];
+
+S2sym = Pi rp^2;
+
+G2sym = M2sym - T2sym * S2sym // Expand // Simplify
+Print["Energie libre de Gibbs : G = ", G2sym];
+
+Phi2sym = Q / rp;
+Print["Potentiel \[EAcute]lectrique : \[CapitalPhi] = ", Phi2sym];
+
+(* Equation d'etat P(r+, T) puis P(v, T) avec v = 2 r+ *)
+P2sym = Solve[T2sym == T, P][[1]];
+Petat2 = P /. P2sym // Simplify
+Print["Equation d'\[EAcute]tat P(r+, T) = ", Petat2];
+
+Petat2v = Petat2 /. rp -> v/2 // Simplify
+Print["Equation d'\[EAcute]tat P(v, T) = ", Petat2v];
+
+(* Point critique : d2P/dv2 = 0 et dP/dv = 0 *)
+dPdv   = D[Petat2v, v];
+d2Pdv2 = D[Petat2v, {v, 2}];
+
+Texpr = Assuming[Q > 0,
+  T /. Solve[d2Pdv2 == 0, T][[1]] // Simplify
+]
+
+eqVc = dPdv /. T -> Texpr // Simplify;
+solVc = Solve[eqVc == 0 && v > 0 && Q > 0, v];
+vcSym = v /. solVc[[-1]] // Simplify // PowerExpand
+rcSym = vcSym / 2 // Simplify // PowerExpand
+Print["Volume critique : v_c = ", vcSym];
+Print["Rayon critique : r_c = ", rcSym];
+
+TcSym = Assuming[Q > 0, Texpr /. v -> vcSym // Simplify // PowerExpand]
+Print["Temp\[EAcute]rature critique : T_c = ", TcSym];
+
+PcSym = Assuming[Q > 0,
+  Petat2v /. {v -> vcSym, T -> TcSym} // Simplify // PowerExpand
+]
+Print["Pression critique : P_c = ", PcSym];
+
+(* Rapport universel 3/8 de van der Waals *)
+ratioSym = Assuming[Q > 0, PcSym * vcSym / TcSym // FullSimplify // PowerExpand]
+Print["Rapport universel P_c v_c / T_c = ", ratioSym, "  (Egal 3/8 de van der Waals)"];
+
+Print["\n--- Equation d'\[EAcute]tat r\[EAcute]duite (variables r\[EAcute]duites) ---"];
+PreduceSym[\[Omega]_, \[Theta]_] := 8 \[Theta]/(3 \[Omega]) - 2/\[Omega]^2 + 1/(3 \[Omega]^4);
+verCrit = PreduceSym[1, 1]
+Print["V\[EAcute]rification au point critique (\[Omega]=1,\[Theta]=1) : p = ", verCrit, " \[Checkmark]"];
+
+(* Exposants critiques (champ moyen) : verification des relations d'echelle *)
+Print["\n--- Exposants critiques (champ moyen) ---"];
+Print["\[Beta] = 1/2  (param\[EGrave]tre d'ordre \[CapitalDelta]\[Omega] ~ |t|^{1/2})"];
+Print["\[Delta] = 3   (isotherme critique : |P-P_c| ~ |v-v_c|^3)"];
+Print["\[Gamma] = 1   (compressibilit\[EAcute] : \[Kappa]_T ~ |t|^{-1})"];
+Print["\[Alpha] = 0   (C_V = 0 pour les TN de Bekenstein-Hawking)"];
+Print["Rushbrooke : \[Alpha] + 2\[Beta] + \[Gamma] = ", 0 + 2*(1/2) + 1, " = 2 \[Checkmark]"];
+Print["Griffiths : \[Beta](\[Delta]-1) = ", (1/2)*(3-1), " = \[Gamma] = 1 \[Checkmark]"];
+
+dT2dr  = D[T2sym, rp];
+CP2sym = T2sym * (D[S2sym, rp] / dT2dr) // Simplify
+Print["\n C_P = ", CP2sym];
+
+(* Divergences de C_P (Q=1) : r_div = sqrt((1 +/- sqrt(1 - 96 Pi P)) / (16 Pi P)), valides si 96 Pi P < 1 *)
+dT2drQ1 = dT2dr /. Q -> 1;
+solDivX = Solve[(dT2drQ1 /. rp -> Sqrt[x]) == 0 && x > 0, x, Reals] // Simplify;
+rdivSymExpr = Sqrt[x] /. solDivX // Simplify // PowerExpand
+Print["Positions des divergences de C_P (Q=1) : ", rdivSymExpr];
+
+(* Smarr etendue avec terme electrostatique *)
+V2sym  = 4 Pi rp^3 / 3;
+Smarr2 = Simplify[2 T2sym * S2sym - 2 P * V2sym + Phi2sym * Q - M2sym]
+Print["\n V\[EAcute]rification Smarr (2TS - 2PV + \[CapitalPhi]Q - M) = ", Smarr2, " \[Checkmark]"];
+
+
+(* ::Subsection::Closed:: *)
+(*Valeurs num\[EAcute]riques du point critique (Q = 1)*)
+
+
+Q0 = 1.0;
+rcN  = Sqrt[6.0] * Q0;
+PcN  = 1.0 / (96.0 Pi Q0^2);
+TcN  = Sqrt[6.0] / (18.0 Pi Q0);
+vcN  = 2.0 * rcN;
+
+Print["\n--- Point critique (Q = 1) ---"];
+Print["r_c = ", rcN];
+Print["P_c = ", PcN];
+Print["T_c = ", TcN];
+Print["v_c = ", vcN];
+Print["P_c v_c / T_c = ", PcN * vcN / TcN, "  (exact = 3/8 = ", 3/8, ")"];
+
+
+(* ::Subsection::Closed:: *)
+(*Fonctions num\[EAcute]riques RN-AdS*)
+
+
+QQ = 1.0;
+
+TRN[rp_, Pv_]  := 1/(4 Pi rp) - QQ^2/(4 Pi rp^3) + 2 Pv rp;
+MRN[rp_, Pv_]  := rp/2 + QQ^2/(2 rp) + 4 Pi Pv rp^3/3;
+SRN[rp_]       := Pi rp^2;
+GRN[rp_, Pv_]  := MRN[rp, Pv] - TRN[rp, Pv] * SRN[rp];
+PRN[rp_, Tv_]  := Tv/(2 rp) - 1/(8 Pi rp^2) + QQ^2/(8 Pi rp^4);
+PhiRN[rp_]     := QQ/rp;
+CPRN[rp_, Pv_] := Module[{Tv, dTdr},
+  Tv = TRN[rp, Pv];
+  dTdr = -1/(4 Pi rp^2) + 3 QQ^2/(4 Pi rp^4) + 2 Pv;
+  If[Abs[dTdr] < 1*^-14, Missing[], Tv * 2 Pi rp / dTdr]
+];
+
+findCPdivs[Pv_] := Module[{disc, rm, rpl},
+  disc = 1.0 - Pv/PcN;
+  Which[
+    disc < 0, {},
+    Abs[disc] < 1*^-10, {Sqrt[1.0/(16 Pi Pv)]},
+    True,
+    Select[{Sqrt[(1 - Sqrt[disc])/(16 Pi Pv)],
+            Sqrt[(1 + Sqrt[disc])/(16 Pi Pv)]},
+           # > QQ &]
+  ]
+];
+
+
+(* ::Subsection::Closed:: *)
+(*Inversion symbolique : r\[Congruent](T,P,Q) et G(T), S(T) explicites*)
+
+
+(* En multipliant T(r\[Congruent]) = 1/(4 \[Pi] r\[Congruent]) - Q^2/(4 \[Pi] r\[Congruent]^3) + 2 P r\[Congruent] *)
+(* par 4 \[Pi] r\[Congruent]^3, on obtient le polynome quartique de contrainte :       *)
+(*   8 \[Pi] P r\[Congruent]^4  -  4 \[Pi] T r\[Congruent]^3  +  r\[Congruent]^2  -  Q^2  =  0          *)
+(* Pour P < P_c, ce polynome admet 3 racines reelles > Q dans la fenetre *)
+(* [T_min, T_max] (correspondant aux 3 branches PTN / instable / GTN),  *)
+(* et 1 seule racine > Q en dehors. *)
+
+polyInvRN[r_, Tv_, Pv_, Qv_] := 8 Pi Pv r^4 - 4 Pi Tv r^3 + r^2 - Qv^2;
+polyInvRNSym = polyInvRN[rp, T, P, Q];
+solsRN = Solve[polyInvRNSym == 0, rp];
+Print["Polynome de contrainte (RN-AdS) : ", polyInvRNSym, " = 0"];
+Print["  \[DoubleRightArrow] 4 racines algebriques r\[Congruent](T,P,Q), traitees par Root/NSolve."];
+
+(* Racines physiques : reelles et > Q (pudeur de l'horizon), classees par r\[Congruent] croissant *)
+(* Convention : branche 1 = PTN (plus petit r\[Congruent]), branche 2 = instable, branche 3 = GTN *)
+rPhysRN[Tv_?NumericQ, Pv_?NumericQ, Qv_?NumericQ] := Module[
+  {allRoots, realRoots},
+  allRoots = rp /. NSolve[polyInvRN[rp, Tv, Pv, Qv] == 0, rp];
+  realRoots = Select[allRoots, Abs[Im[#]] < 1*^-9 && Re[#] > Qv &];
+  Sort[Re[realRoots]]
+];
+
+(* G(T) exprime explicitement comme fonction directe de T sur la branche k  *)
+(* Substitution algebrique de r\[Congruent] -> racine_k dans G(r\[Congruent]) = r\[Congruent]/4 + 3Q^2/(4 r\[Congruent]) - 2\[Pi] P r\[Congruent]^3/3 *)
+GRNofT[k_Integer][Tv_?NumericQ, Pv_?NumericQ, Qv_?NumericQ] := Module[
+  {roots = rPhysRN[Tv, Pv, Qv], rv},
+  If[Length[roots] < k, Indeterminate,
+    rv = roots[[k]];
+    rv/4 + 3 Qv^2/(4 rv) - 2 Pi Pv rv^3/3
+  ]
+];
+
+(* S(T) explicite sur la branche k : substitution dans S(r\[Congruent]) = \[Pi] r\[Congruent]^2 *)
+SRNofT[k_Integer][Tv_?NumericQ, Pv_?NumericQ, Qv_?NumericQ] := Module[
+  {roots = rPhysRN[Tv, Pv, Qv]},
+  If[Length[roots] < k, Indeterminate, Pi roots[[k]]^2]
+];
+
+(* Utilitaires : bornes de la fenetre 3-branches *)
+(* Pour P < P_c : T_max = T(r\[Congruent]_1) (max local de T), T_min = T(r\[Congruent]_2) (min local) *)
+TmaxRN[Pv_] := Module[{divs = findCPdivs[Pv]},
+  If[Length[divs] == 2, TRN[divs[[1]], Pv], Missing["MonotonicT"]]
+];
+TminRN[Pv_] := Module[{divs = findCPdivs[Pv]},
+  If[Length[divs] == 2, TRN[divs[[2]], Pv], Missing["MonotonicT"]]
+];
+
+
+(* ::Subsection::Closed:: *)
+(*Figures*)
+
+
+(* Fig 4 : T(r+) RN-AdS *)
+pratiosT = {0.5, 0.8, 1.0, 1.2, 1.5};
+styles4 = Table[If[pratiosT[[i]] == 1.0,
+                    {colorF[i], Thick, Dashing[{0.02, 0.01}]},
+                    {colorF[i], Thick}],
+                 {i, Length[pratiosT]}];
+g4 = Plot[
+  Evaluate[Table[TRN[rp, pr * PcN], {pr, pratiosT}]],
+  {rp, 0.3, 12},
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> styles4,
+  FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16], Style["T", 16]},
+  PlotRange -> {{0, 12}, {0, 0.12}},
+  PlotLabel -> Style["T(r\!\(\*SubscriptBox[\(+\), \(\)]\)) \[LongDash] Reissner-Nordstr\[ODoubleDot]m-AdS (Q = 1)", 13, Bold],
+  Epilog -> {Black, PointSize[0.018], Point[{rcN, TcN}]},
+  PlotLegends -> Placed[
+    Column[{
+      LineLegend[Table[colorF[i], {i, Length[pratiosT]}],
+        Table[Style["P/P\!\(\*SubscriptBox[\(c\), \(\)]\) = " <> ToString[pratiosT[[i]]], 9],
+              {i, Length[pratiosT]}]],
+      PointLegend[{Black}, {Style["Point critique (r\!\(\*SubscriptBox[\(c\), \(\)]\), T\!\(\*SubscriptBox[\(c\), \(\)]\))", 9]}]
+    }],
+    {Left, Top}]
+];
+saveFig[g4, "fig04_T_rp_rn"];
+
+(* Fig 5 : isothermes P-v *)
+pratiosT5 = {0.85, 0.90, 0.95, 1.0, 1.05, 1.10};
+styles5 = Table[If[pratiosT5[[i]] == 1.0,
+                    {colorF[i], Thick, Dashing[{0.02, 0.01}]},
+                    {colorF[i], Thick}],
+                {i, Length[pratiosT5]}];
+g5 = Plot[
+  Evaluate[Table[PRN[v/2, tr * TcN], {tr, pratiosT5}]],
+  {v, 0.8, 18},
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> styles5,
+  FrameLabel -> {Style["v = 2r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16], Style["P", 16]},
+  PlotRange -> {{0.5, 18}, {0, 0.008}},
+  PlotLabel -> Style["Diagramme P-v \[LongDash] Analogie van der Waals (RN-AdS)", 13, Bold],
+  Epilog -> {Black, PointSize[0.018], Point[{vcN, PcN}]},
+  PlotLegends -> Placed[
+    Column[{
+      LineLegend[Table[colorF[i], {i, Length[pratiosT5]}],
+        Table[Style["T/T\!\(\*SubscriptBox[\(c\), \(\)]\) = " <> ToString[pratiosT5[[i]]], 9],
+              {i, Length[pratiosT5]}]],
+      PointLegend[{Black}, {Style["Point critique (v\!\(\*SubscriptBox[\(c\), \(\)]\), P\!\(\*SubscriptBox[\(c\), \(\)]\))", 9]}]
+    }],
+    {Right, Top}]
+];
+saveFig[g5, "fig05_PV_rn"];
+
+(* Fig 6 : G(T) queue d'hirondelle *)
+pratiosG = {0.5, 0.7, 0.85, 1.0, 1.15};
+
+(* Racines de T(r,P) = T0 *)
+findBranches[Pv_, T0_] := Module[
+  {rscan, fvals, roots},
+  rscan = Range[QQ + 0.01, 25, 0.003];
+  fvals = TRN[#, Pv] - T0 & /@ rscan;
+  roots = {};
+  Do[
+   If[fvals[[j]] * fvals[[j+1]] < 0,
+    AppendTo[roots,
+     FindRoot[TRN[rp, Pv] - T0,
+      {rp, rscan[[j]], rscan[[j+1]]}][[1,2]]]],
+   {j, Length[rscan]-1}];
+  Sort[roots]
+];
+
+(* Resolution directe du systeme {T(r1)=T(r2), G(r1)=G(r2)} a P fixe *)
+findCrossingDirect[Pv_, r1guess_, r2guess_] := Module[
+  {sol, r1c, r2c, Tco, Gco},
+  sol = Quiet[Check[
+    FindRoot[
+     {TRN[r1, Pv] == TRN[r2, Pv], GRN[r1, Pv] == GRN[r2, Pv]},
+     {{r1, r1guess}, {r2, r2guess}},
+     MaxIterations -> 300, AccuracyGoal -> 10],
+    $Failed]];
+  If[sol === $Failed, Return[None]];
+  r1c = r1 /. sol; r2c = r2 /. sol;
+  If[!(NumericQ[r1c] && NumericQ[r2c]), Return[None]];
+  If[r1c < QQ + 0.001 || r2c <= r1c + 0.01, Return[None]];
+  Tco = TRN[r1c, Pv]; Gco = GRN[r1c, Pv];
+  If[!(NumericQ[Tco] && NumericQ[Gco]), Return[None]];
+  {Tco, Gco, r1c, r2c}
+];
+
+grListA = {}; grListB = {}; crossings = {};
+
+(* Bornes globales de T pour Plot[...] direct *)
+Tlo = 0.0005;  (* borne inferieure (r\[Congruent] -> Q+) *)
+Thi = 0.08;    (* borne superieure (branche GTN etendue) *)
+
+Do[
+  Pv = pratiosG[[i]] * PcN;
+  divs = findCPdivs[Pv];
+  lbl = "P/P\!\(\*SubscriptBox[\(c\), \(\)]\) = " <> ToString[pratiosG[[i]]];
+  If[pratiosG[[i]] == 1.0, lbl = lbl <> " (crit.)"];
+  sty     = If[pratiosG[[i]] == 1.0,
+               {colorF[i], Thick, Dashing[{0.02, 0.01}]},
+               {colorF[i], Thick}];
+  styInst = {colorF[i], Thin, Dashed, Opacity[0.6]};
+
+  If[Length[divs] == 2,
+   (* P < P_c : trois branches physiques, 3-root window [T_min, T_max] *)
+   r1d = divs[[1]]; r2d = divs[[2]];
+   TmaxV = TRN[r1d, Pv];   (* maximum local de T(r\[Congruent]) *)
+   TminV = TRN[r2d, Pv];   (* minimum local de T(r\[Congruent]) *)
+   epsT = 1.0*^-4;         (* buffer anti-degenerescence aux extrema *)
+
+   (* Branche PTN (k=1) : T \[Element] [2P, T_max], racine = plus petit r\[Congruent] > Q *)
+   gPTN  = Plot[GRNofT[1][T, Pv, QQ],
+             {T, 2.0 Pv + epsT, TmaxV - epsT},
+             PlotStyle -> sty, PlotPoints -> 120, Exclusions -> None,
+             WorkingPrecision -> MachinePrecision];
+
+   (* Branche instable (k=2) : T \[Element] [T_min, T_max], racine mediane *)
+   gInst = Plot[GRNofT[2][T, Pv, QQ],
+             {T, TminV + epsT, TmaxV - epsT},
+             PlotStyle -> styInst, PlotPoints -> 120, Exclusions -> None,
+             WorkingPrecision -> MachinePrecision];
+
+   (* Branche GTN : deux morceaux a recoller *)
+   (* partie basse (regime 3-racines, k=3) : T \[Element] [T_min, T_max] *)
+   gGTNlow = Plot[GRNofT[3][T, Pv, QQ],
+             {T, TminV + epsT, TmaxV - epsT},
+             PlotStyle -> sty, PlotPoints -> 120, Exclusions -> None,
+             WorkingPrecision -> MachinePrecision];
+   (* partie haute (regime 1-racine, k=1 par unicite) : T > T_max *)
+   gGTNhi  = Plot[GRNofT[1][T, Pv, QQ],
+             {T, TmaxV + epsT, Thi},
+             PlotStyle -> sty, PlotPoints -> 120, Exclusions -> None,
+             WorkingPrecision -> MachinePrecision];
+   gGTN = Show[gGTNlow, gGTNhi];
+
+   AppendTo[grListA, gPTN]; AppendTo[grListA, gInst]; AppendTo[grListA, gGTN];
+   AppendTo[grListB, gPTN]; AppendTo[grListB, gInst]; AppendTo[grListB, gGTN];
+
+   If[pratiosG[[i]] < 1.0,
+    crossDir = findCrossingDirect[Pv, 0.8 r1d, 1.2 r2d];
+    If[crossDir =!= None,
+     AppendTo[crossings,
+      {crossDir[[1]], crossDir[[2]], crossDir[[3]], crossDir[[4]],
+       colorF[i], pratiosG[[i]]}];
+     Print[" P/Pc = ", pratiosG[[i]],
+           " : T_coex = ", NumberForm[crossDir[[1]], {5,5}],
+           ", r1 = ",      NumberForm[crossDir[[3]], {4,2}],
+           ", r2 = ",      NumberForm[crossDir[[4]], {4,2}]]]],
+
+   (* P >= P_c : T(r\[Congruent]) monotone, une seule racine physique (k=1) *)
+   gAll = Plot[GRNofT[1][T, Pv, QQ],
+            {T, 2.0 Pv + 1.0*^-4, Thi},
+            PlotStyle -> sty, PlotPoints -> 150, Exclusions -> None,
+            WorkingPrecision -> MachinePrecision];
+   AppendTo[grListA, gAll]; AppendTo[grListB, gAll]
+  ],
+  {i, Length[pratiosG]}
+];
+
+Print[" Total croisements trouv\[EAcute]s : ", Length[crossings]];
+
+(* Epilogue panneau zoom : marqueurs + annotations r1, r2 *)
+epilZoom = {};
+Do[
+  cr = crossings[[k]];
+  AppendTo[epilZoom, {Black,   AbsolutePointSize[4], Point[{cr[[1]], cr[[2]]}]}];
+  AppendTo[epilZoom, {cr[[5]], AbsolutePointSize[3], Point[{cr[[1]], cr[[2]]}]}];
+  (* Decalage adapte a chaque courbe pour eviter superposition *)
+  {offx, offy} = Which[
+    cr[[6]] <= 0.5, { 0.004,  0.035},
+    cr[[6]] <= 0.7, {-0.003, -0.040},
+    True,           { 0.005,  0.040}
+  ];
+  xBox = cr[[1]] + offx;
+  yBox = cr[[2]] + offy;
+
+  AppendTo[epilZoom,
+   {cr[[5]], AbsoluteThickness[1.2], Arrowheads[0.008],
+    Arrow[{{xBox, yBox}, {cr[[1]], cr[[2]]}}]}];
+
+  AppendTo[epilZoom,
+   Inset[
+    Framed[
+     Style[
+      Row[{Subscript["r","1"], " = ", NumberForm[cr[[3]], {3,2}],
+           ",  ",
+           Subscript["r","2"], " = ", NumberForm[cr[[4]], {3,2}]}],
+      8, Bold, cr[[5]]],
+     Background    -> White,
+     FrameStyle    -> Directive[cr[[5]], AbsoluteThickness[1.2]],
+     RoundingRadius -> 4,
+     FrameMargins  -> {{3,3},{1,1}}],
+    {xBox, yBox}, {Center, Center}]],
+
+  {k, Length[crossings]}
+];
+
+AppendTo[epilZoom,
+ Inset[Style["PTN \[RightArrow] GTN", Italic, 10, GrayLevel[0.5]],
+       {0.040, 0.77}]];
+
+legendG6 = LineLegend[
+  Table[Directive[colorF[i], Thick,
+   If[pratiosG[[i]] == 1.0, Dashing[{0.02,0.01}], Dashing[{}]]],
+   {i, Length[pratiosG]}],
+  Table[Style["P/P\!\(\*SubscriptBox[\(c\), \(\)]\) = " <>
+              ToString[pratiosG[[i]]] <>
+              If[pratiosG[[i]] == 1.0, " (crit.)", ""], 9],
+   {i, Length[pratiosG]}],
+  LegendMarkerSize -> {18, 3},
+  LegendMargins   -> 2,
+  Spacings        -> {0.3, 0.1}
+];
+
+panelA6 = Legended[
+  Show[grListA,
+   Frame       -> True,
+   FrameLabel  -> {Style["T", 16], Style["G", 16]},
+   PlotRange   -> {{0, 0.06}, {-0.5, 1.5}},
+   AspectRatio -> 0.75,
+   GridLines   -> Automatic,
+   GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+   PlotLabel   -> Style["(a) Vue globale", 12, Bold],
+   ImageSize   -> 400],
+  Placed[legendG6, {0.80, 0.78}]
+];
+
+panelB6 = Legended[
+  Show[grListB,
+   Frame       -> True,
+   FrameLabel  -> {Style["T", 16], Style["G", 16]},
+   PlotRange   -> {{0.025, 0.050}, {0.70, 1.05}},
+   AspectRatio -> 0.75,
+   GridLines   -> Automatic,
+   GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+   PlotLabel   -> Style["(b) Zoom \[LongDash] Queue d'hirondelle", 12, Bold],
+   Epilog      -> epilZoom,
+   ImageSize   -> 400],
+  Placed[legendG6, {0.80, 0.78}]
+];
+
+g6 = GraphicsGrid[{{panelA6, panelB6}},
+      Spacings  -> Scaled[0.03],
+      ImageSize -> 820];
+
+saveFig[g6, "fig06_GT_swallowtail"];
+Print[" G(T) - queue d'hirondelle : ", Length[crossings],
+      " points de croisement trouv\[EAcute]s."];
+
+(* Fig 7 : courbe de coexistence par continuation *)
+Print["  Courbe de coexistence ..."];
+
+findCoex[Pv_, r1g_, r2g_] := Module[
+  {eqs, sol},
+  eqs = {TRN[r1, Pv] - TRN[r2, Pv],
+         GRN[r1, Pv] - GRN[r2, Pv]};
+  sol = Quiet[FindRoot[eqs, {{r1, r1g}, {r2, r2g}},
+              MaxIterations -> 200, AccuracyGoal -> 10]];
+  If[sol === $Failed, None,
+    {r1 /. sol, r2 /. sol}]
+];
+
+(* Methode de continuation : r1, r2 precedents servent de guess *)
+Pfracs = Range[0.98, 0.04, -0.01];
+coexData = {};
+r1prev = 0.85 rcN; r2prev = 1.15 rcN;
+Do[
+  Pv = fr * PcN;
+  res = findCoex[Pv, r1prev, r2prev];
+  If[res =!= None && res[[1]] > QQ + 0.01 && res[[2]] > res[[1]] + 0.05
+     && res[[1]] < rcN && res[[2]] > rcN,
+    Tco = TRN[res[[1]], Pv];
+    If[Tco > 0,
+      AppendTo[coexData, {Tco, Pv, res[[1]], res[[2]]}];
+      r1prev = res[[1]]; r2prev = res[[2]]]],
+  {fr, Pfracs}
+];
+AppendTo[coexData, {TcN, PcN, rcN, rcN}];
+coexData = Sort[coexData, #1[[1]] < #2[[1]] &];
+(* Filtrage monotone pour eliminer doublons numeriques *)
+filtData = {coexData[[1]]};
+Do[
+  If[coexData[[k,1]] > filtData[[-1,1]] && coexData[[k,2]] > filtData[[-1,2]],
+     AppendTo[filtData, coexData[[k]]]],
+  {k, 2, Length[coexData]}];
+coexData = filtData;
+Tcoex = coexData[[All, 1]];
+Pcoex = coexData[[All, 2]];
+Print["    ", Length[coexData]-1, " points + critique."];
+
+g7 = Legended[
+  ListLinePlot[Transpose[{Tcoex, Pcoex}],
+    PlotStyle -> {colorF[1], Thick},
+    FrameLabel -> {Style["T", 16], Style["P", 16]},
+    PlotRange -> {{0.008, TcN * 1.1}, {0, PcN * 1.15}},
+    PlotLabel -> Style["Courbe de coexistence PTN/GTN \[LongDash] Construction de Maxwell", 13, Bold],
+    Epilog -> {
+      Red, PointSize[0.02], Point[{TcN, PcN}],
+      Inset[Style["Point critique (T\!\(\*SubscriptBox[\(c\), \(\)]\), P\!\(\*SubscriptBox[\(c\), \(\)]\))", 10, Red], {TcN - 0.006, PcN + 0.0002}],
+      Inset[Style["PTN\n(petit trou noir)", Bold, 10, colorF[1]], {0.020, 0.0015}],
+      Inset[Style["GTN\n(grand trou noir)", Bold, 10, colorF[2]], {0.040, 0.00035}]},
+    Frame -> True,
+    GridLines -> Automatic,
+    GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+    ImageSize -> 500
+  ],
+  Placed[
+    LineLegend[
+      {Directive[colorF[1], Thick], Directive[Red, PointSize[0.02]]},
+      {Style["Courbe de coexistence", 10],
+       Style["Point critique (T\!\(\*SubscriptBox[\(c\), \(\)]\), P\!\(\*SubscriptBox[\(c\), \(\)]\))", 10]},
+      LegendMarkerSize -> {18, 3},
+      LegendMargins -> 2,
+      Spacings -> {0.3, 0.1}
+    ],
+    {0.22, 0.85}]
+];
+saveFig[g7, "fig07_coexistence"];
+
+(* Fig 8 : Construction de Maxwell a T/Tc = 0.9 *)
+Tmw = 0.9 * TcN;
+vArr = Range[1.0, 16, 0.003];
+Piso = PRN[#/2, Tmw] & /@ vArr;
+
+(* Systeme Maxwell : P(r1) = P(r2) et aire nette = 0 *)
+mwEqs[r1_, r2_] := Module[{P1, P2, vInt, Pint, area},
+  P1 = PRN[r1, Tmw]; P2 = PRN[r2, Tmw];
+  vInt = Range[2 r1, 2 r2, (2 r2 - 2 r1)/2000.0];
+  Pint = PRN[#/2, Tmw] & /@ vInt;
+  area = Total[(Pint - P1) * (vInt[[2]] - vInt[[1]])];
+  {P1 - P2, area}
+];
+
+idxN = First[Ordering[Abs[Tcoex - Tmw]]];
+r1g0 = coexData[[idxN, 3]]; r2g0 = coexData[[idxN, 4]];
+solMW = Quiet[FindRoot[mwEqs[r1, r2],
+  {{r1, r1g0}, {r2, r2g0}}, MaxIterations -> 500, AccuracyGoal -> 8]];
+r1mw = r1 /. solMW; r2mw = r2 /. solMW;
+Pmw  = PRN[r1mw, Tmw];
+v1mw = 2 r1mw; v2mw = 2 r2mw;
+
+vFill = Range[v1mw, v2mw, (v2mw - v1mw)/5000.0];
+Pfill = PRN[#/2, Tmw] & /@ vFill;
+dv = vFill[[2]] - vFill[[1]];
+(* Verification : aire+ = aire- (egalite des aires de Maxwell) *)
+areaP = Total[Max[#, 0] & /@ (Pfill - Pmw)] * dv;
+areaM = Total[Max[#, 0] & /@ (Pmw - Pfill)] * dv;
+Print["  Maxwell T/Tc=0.9 : r1 = ", NumberForm[r1mw, {6,4}],
+      ", r2 = ", NumberForm[r2mw, {6,4}],
+      ", P = ", ScientificForm[Pmw, 4]];
+Print["    Aire+ = ", ScientificForm[areaP, 4],
+      ", Aire- = ", ScientificForm[areaM, 4],
+      ", |\[CapitalDelta]A|/A+ = ", ScientificForm[Abs[areaP - areaM]/areaP, 2]];
+
+fillPlus  = Select[Transpose[{vFill, Pfill}], #[[2]] >= Pmw &];
+fillMinus = Select[Transpose[{vFill, Pfill}], #[[2]] < Pmw &];
+
+legendInset = Inset[
+  Framed[
+    Column[{
+      LineLegend[
+        {Directive[colorF[1], Thick],
+         Directive[Red, Thick, Dashed],
+         Directive[Green, Opacity[0.6]],
+         Directive[Red, Opacity[0.6]]},
+        {Style["Isotherme T/T\!\(\*SubscriptBox[\(c\), \(\)]\) = 0.9", 9],
+         Style[Row[{"P\!\(\*SubscriptBox[\(Maxwell\), \(\)]\) = ",
+                    NumberForm[Pmw, {5,5}]}], 9],
+         Style[Row[{"Aire + = ", ScientificForm[areaP, 3]}], 9],
+         Style[Row[{"Aire \[Minus] = ", ScientificForm[areaM, 3]}], 9]},
+        LegendMarkerSize -> {18, 3},
+        LegendMargins    -> {{0,0},{0,0}},
+        Spacings         -> {0.3, 0.1}
+      ],
+      PointLegend[
+        {Directive[Black, AbsolutePointSize[9]]},
+        {Style["Point critique (v\!\(\*SubscriptBox[\(c\), \(\)]\),\
+ P\!\(\*SubscriptBox[\(c\), \(\)]\))", 9]},
+        LegendMarkers    -> {Graphics[{Black, Disk[{0,0},1]},
+                                      ImageSize -> 9]},
+        LegendMarkerSize -> {9, 9},
+        LegendMargins    -> {{0,0},{0,0}},
+        Spacings         -> {0.3, 0.1}
+      ]
+    }, Spacings -> 0.15, Alignment -> Left],
+    Background    -> White,
+    FrameStyle    -> Directive[GrayLevel[0.7], AbsoluteThickness[0.8]],
+    RoundingRadius -> 4,
+    FrameMargins  -> {{5,5},{4,4}}
+  ],
+  Scaled[{0.97, 0.93}], {Right, Top}
+];
+
+g8 = Show[
+  ListLinePlot[Transpose[{vArr, Piso}],
+    PlotStyle -> {colorF[1], Thick},
+    PlotRange -> {{0.5, 16}, {0, 0.006}}],
+  Graphics[{Red, Thick, Dashed,
+    Line[{{v1mw, Pmw}, {v2mw, Pmw}}]}],
+  Graphics[{Opacity[0.35], Green,
+    FilledCurve[{Line[fillPlus ~Join~ {{v2mw, Pmw}, {v1mw, Pmw}}]}]}],
+  Graphics[{Opacity[0.35], Red,
+    FilledCurve[{Line[fillMinus ~Join~ {{v2mw, Pmw}, {v1mw, Pmw}}]}]}],
+  Graphics[{
+    {EdgeForm[{Black, AbsoluteThickness[1]}], Darker[Green],
+     Rectangle[{v1mw-0.1, Pmw-0.00007}, {v1mw+0.1, Pmw+0.00007}]},
+    {EdgeForm[{Black, AbsoluteThickness[1]}], Darker[Red],
+     Rectangle[{v2mw-0.1, Pmw-0.00007}, {v2mw+0.1, Pmw+0.00007}]},
+    {Darker[Green], AbsoluteThickness[1], Arrowheads[0.025],
+     Arrow[{{v1mw-0.8, Pmw+0.0014}, {v1mw, Pmw+0.00015}}]},
+    {Darker[Red], AbsoluteThickness[1], Arrowheads[0.025],
+     Arrow[{{v2mw+0.8, Pmw+0.0014}, {v2mw, Pmw+0.00015}}]},
+    Inset[Framed[Style[
+        Row[{Subscript["r","1"]," = ",NumberForm[r1mw,{4,3}],"\n",
+             Subscript["v","1"]," = ",NumberForm[v1mw,{4,3}]}],
+        10, Bold, Darker[Green]],
+      Background -> White,
+      FrameStyle -> Directive[Darker[Green], AbsoluteThickness[1.2]],
+      RoundingRadius -> 4, FrameMargins -> {{4,4},{3,3}}],
+     {v1mw-0.8, Pmw+0.0018}, {Center, Center}],
+    Inset[Framed[Style[
+        Row[{Subscript["r","2"]," = ",NumberForm[r2mw,{4,3}],"\n",
+             Subscript["v","2"]," = ",NumberForm[v2mw,{4,3}]}],
+        10, Bold, Darker[Red]],
+      Background -> White,
+      FrameStyle -> Directive[Darker[Red], AbsoluteThickness[1.2]],
+      RoundingRadius -> 4, FrameMargins -> {{4,4},{3,3}}],
+     {v2mw+0.8, Pmw+0.0018}, {Center, Center}],
+    {Black, AbsolutePointSize[9], Point[{vcN, PcN}]},
+    Inset[Framed[
+      Column[{
+        Style["V\[EAcute]rification num\[EAcute]rique :", Bold, 9, Black],
+        Row[{Style["Aire\!\(\*SuperscriptBox[\(\),\(+\)]\) = ",9,Black],
+             Style[ScientificForm[areaP,3],9,Black]}],
+        Row[{Style["Aire\!\(\*SuperscriptBox[\(\),\(-\)]\) = ",9,Black],
+             Style[ScientificForm[areaM,3],9,Black]}],
+        Row[{Style["|\[CapitalDelta]A|/A\!\(\*SuperscriptBox[\(+\),\(\)]\) = ",9,Black],
+             Style[ScientificForm[Abs[areaP-areaM]/areaP,2],9,Black]}]
+      }, Alignment -> Left, Spacings -> 0.3],
+      Background -> LightYellow, RoundingRadius -> 4,
+      FrameMargins -> {{4,4},{3,3}}],
+     Scaled[{0.97, 0.50}], {Right, Center}],
+    legendInset
+  }],
+  Frame      -> True,
+  FrameLabel -> {Style["v = 2r\!\(\*SubscriptBox[\(+\),\(\)]\)",16],
+                 Style["P",16]},
+  PlotRange  -> {{0.5,16},{0,0.006}},
+  PlotLabel  -> Style["Construction de Maxwell \[LongDash] \
+T/T\!\(\*SubscriptBox[\(c\),\(\)]\) = 0.9", 13, Bold],
+  GridLines      -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  ImageSize      -> 520
+];
+
+saveFig[g8, "fig08_maxwell"];
+
+(* Fig 9 : CP(r+) RN-AdS, jusqu'a 2 divergences selon P/Pc *)
+pratiosCP = {0.5, 0.8, 1.0, 1.3};
+grCP2a = {}; grCP2b = {};
+divListFig9 = {};
+eps9  = 0.003;     
+eps9A = 0.0003;    
+
+Do[
+  Pv = pratiosCP[[i]] * PcN;
+  divs = findCPdivs[Pv];
+  AppendTo[divListFig9, {i, divs}];
+  sty = If[pratiosCP[[i]] == 1.0,
+           {colorF[i], Thick, Dashing[{0.02, 0.01}]},
+           {colorF[i], Thick}];
+
+  If[Length[divs] == 2,
+    (* Trois branches : PTN, instable, GTN *)
+    g1i = Plot[CPRN[rp, Pv], {rp, QQ + 0.01, divs[[1]] - eps9A},
+      PlotStyle -> sty, PlotRange -> All,
+      PlotPoints -> 300, MaxRecursion -> 8, Exclusions -> None,
+      WorkingPrecision -> MachinePrecision];
+    g2i = Plot[CPRN[rp, Pv], {rp, divs[[1]] + eps9A, divs[[2]] - eps9A},
+      PlotStyle -> sty, PlotRange -> All,
+      PlotPoints -> 300, MaxRecursion -> 8, Exclusions -> None,
+      WorkingPrecision -> MachinePrecision];
+    g3i = Plot[CPRN[rp, Pv], {rp, divs[[2]] + eps9A, 10},
+      PlotStyle -> sty, PlotRange -> All,
+      PlotPoints -> 300, MaxRecursion -> 8, Exclusions -> None,
+      WorkingPrecision -> MachinePrecision];
+    AppendTo[grCP2a, g1i]; AppendTo[grCP2a, g2i]; AppendTo[grCP2a, g3i];
+    h1i = Plot[CPRN[rp, Pv], {rp, QQ + 0.01, divs[[1]] - eps9},
+      PlotStyle -> sty, PlotPoints -> 300, MaxRecursion -> 6, Exclusions -> None,
+      WorkingPrecision -> MachinePrecision];
+    h2i = Plot[CPRN[rp, Pv], {rp, divs[[1]] + eps9, divs[[2]] - eps9},
+      PlotStyle -> sty, PlotPoints -> 300, MaxRecursion -> 6, Exclusions -> None,
+      WorkingPrecision -> MachinePrecision];
+    h3i = Plot[CPRN[rp, Pv], {rp, divs[[2]] + eps9, 10},
+      PlotStyle -> sty, PlotPoints -> 300, MaxRecursion -> 6, Exclusions -> None,
+      WorkingPrecision -> MachinePrecision];
+    AppendTo[grCP2b, h1i]; AppendTo[grCP2b, h2i]; AppendTo[grCP2b, h3i],
+
+    If[Length[divs] == 1,
+      (* Point critique : divergence unique de second ordre *)
+      g1i = Plot[CPRN[rp, Pv], {rp, QQ + 0.01, divs[[1]] - eps9A},
+        PlotStyle -> sty, PlotRange -> All,
+        PlotPoints -> 300, MaxRecursion -> 8, Exclusions -> None,
+        WorkingPrecision -> MachinePrecision];
+      g2i = Plot[CPRN[rp, Pv], {rp, divs[[1]] + eps9A, 10},
+        PlotStyle -> sty, PlotRange -> All,
+        PlotPoints -> 300, MaxRecursion -> 8, Exclusions -> None,
+        WorkingPrecision -> MachinePrecision];
+      AppendTo[grCP2a, g1i]; AppendTo[grCP2a, g2i];
+      h1i = Plot[CPRN[rp, Pv], {rp, QQ + 0.01, divs[[1]] - eps9},
+        PlotStyle -> sty, PlotPoints -> 80, MaxRecursion -> 4];
+      h2i = Plot[CPRN[rp, Pv], {rp, divs[[1]] + eps9, 10},
+        PlotStyle -> sty, PlotPoints -> 80, MaxRecursion -> 4];
+      AppendTo[grCP2b, h1i]; AppendTo[grCP2b, h2i],
+
+      (* P > Pc : branche unique sans divergence *)
+      gAll = Plot[CPRN[rp, Pv], {rp, QQ + 0.01, 10},
+        PlotStyle -> sty, PlotRange -> All,
+        PlotPoints -> 200, MaxRecursion -> 6];
+      hAll = Plot[CPRN[rp, Pv], {rp, QQ + 0.01, 10},
+        PlotStyle -> sty, PlotPoints -> 80, MaxRecursion -> 4];
+      AppendTo[grCP2a, gAll]; AppendTo[grCP2b, hAll]]
+  ],
+  {i, Length[pratiosCP]}
+];
+
+divLinesFig9 = Flatten[
+  Table[
+    Module[{idx = divListFig9[[k, 1]], ds = divListFig9[[k, 2]]},
+      Table[{
+        Directive[colorF[idx], Thin, Dotted, Opacity[0.5]],
+        InfiniteLine[{d, 0}, {0, 1}]
+      }, {d, ds}]
+    ],
+    {k, Length[divListFig9]}
+  ], 1
+];
+
+legendCP2 = LineLegend[
+  Table[Directive[colorF[i], Thick,
+    If[pratiosCP[[i]] == 1.0, Dashing[{0.02, 0.01}], Dashing[{}]]],
+    {i, Length[pratiosCP]}],
+  Table[Style[
+    "P/P\!\(\*SubscriptBox[\(c\), \(\)]\) = " <> ToString[pratiosCP[[i]]] <>
+    If[pratiosCP[[i]] == 1.0, " (crit.)", ""], 9],
+    {i, Length[pratiosCP]}],
+  LegendMarkerSize -> {18, 3},
+  LegendMargins -> 2,
+  Spacings -> {0.3, 0.1}
+];
+
+panel9A = Legended[
+  Show[symRescaleY /@ grCP2a,
+    Frame -> True,
+    FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16],
+                   Style["C\!\(\*SubscriptBox[\(P\), \(\)]\)", 16]},
+    PlotRange -> {{0.8, 10}, symYRange},
+    FrameTicks -> {{symYTicks, symYTicksR}, {Automatic, None}},
+    GridLines -> {Automatic, symYGrid},
+    GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+    Background -> White,
+    AspectRatio -> 0.75,
+    Epilog -> Flatten[{
+      {GrayLevel[0], Dashed, Line[{{0.8, 0}, {10, 0}}]},
+      divLinesFig9
+    }, 1],
+    PlotLabel -> Style["(a) C\!\(\*SubscriptBox[\(P\), \(\)]\)(r\!\(\*SubscriptBox[\(+\), \(\)]\)) \[LongDash] \[CapitalEAcute]chelle symlog",
+                       12, Bold],
+    ImageSize -> 380
+  ],
+  Placed[legendCP2, {0.82, 0.22}]
+];
+
+panel9B = Legended[
+  Show[grCP2b,
+    Frame -> True,
+    FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16],
+                   Style["C\!\(\*SubscriptBox[\(P\), \(\)]\)", 16]},
+    PlotRange -> {{1.0, 10}, {-300, 300}},
+    AspectRatio -> 0.75,
+    GridLines -> Automatic,
+    GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+    Epilog -> Flatten[{
+      {GrayLevel[0], Dashed, Line[{{1, 0}, {10, 0}}]},
+      divLinesFig9,
+      {Inset[Style["PTN",        Bold,   11, GrayLevel[0.5]], {1.5,  180}]},
+      {Inset[Style["(instable)", Italic, 10, GrayLevel[0.5]], {3.0, -200}]},
+      {Inset[Style["GTN",        Bold,   11, GrayLevel[0.5]], {8.5,  180}]}
+    }, 1],
+    PlotLabel -> Style["(b) C\!\(\*SubscriptBox[\(P\), \(\)]\)(r\!\(\*SubscriptBox[\(+\), \(\)]\)) \[LongDash] Zoom lin\[EAcute]aire",
+                       12, Bold],
+    ImageSize -> 380
+  ],
+  Placed[legendCP2, {0.82, 0.22}]
+];
+
+g9 = GraphicsGrid[{{panel9A, panel9B}},
+  Spacings  -> Scaled[0.03],
+  ImageSize -> 780];
+saveFig[g9, "fig09_Cp_rn"];
+
+(* Fig 10 : S(T) avec gap entropique \[CapitalDelta]S = \[Pi](r2^2 - r1^2) aux points de coexistence. *)
+pratiosST = {0.5, 0.8, 1.0, 1.3};
+stylesST = Table[If[pratiosST[[i]] == 1.0,
+                    {colorF[i], Thick, Dashing[{0.02, 0.01}]},
+                    {colorF[i], Thick}],
+                 {i, Length[pratiosST]}];
+
+gapEpilog = Flatten[
+  Table[
+    Module[{prCoex, Pexact, idxC, Tco, Pco, r1c, r2c, r1g, r2g, solExact,
+            S1c, S2c, dSc, col, yAxesFrac, Smid, yInset, xLim = 0.08, yLim = 200},
+      prCoex = {0.5, 0.8}[[iGap]];
+      Pexact = prCoex * PcN;
+      idxC = First[Ordering[Abs[Pcoex - Pexact]]];
+      r1g = coexData[[idxC, 3]]; r2g = coexData[[idxC, 4]];
+      solExact = Quiet[FindRoot[
+        {TRN[r1, Pexact] == TRN[r2, Pexact],
+         GRN[r1, Pexact] == GRN[r2, Pexact]},
+        {{r1, r1g}, {r2, r2g}},
+        MaxIterations -> 300, AccuracyGoal -> 12, WorkingPrecision -> MachinePrecision]];
+      r1c = r1 /. solExact; r2c = r2 /. solExact;
+      Tco = TRN[r1c, Pexact]; Pco = Pexact;
+      S1c = Pi r1c^2; S2c = Pi r2c^2; dSc = S2c - S1c;
+      col = colorF[iGap];
+      Smid = (S1c + S2c)/2;
+      yAxesFrac = 0.97 - (iGap - 1) * 0.18;
+      yInset = yAxesFrac * yLim;
+      {
+        {col, Thickness[0.004],
+         Arrowheads[{-0.022, 0.022}],
+         Arrow[{{Tco, S1c}, {Tco, S2c}}]},
+        {col, Thickness[0.0015], Arrowheads[0.02],
+         Arrow[{{0.97 xLim, yInset}, {Tco, Smid}}]},
+        Inset[
+          Framed[
+            Style["\[CapitalDelta]S = \[Pi](r\!\(\*SubsuperscriptBox[\(2\), \(\), \(2\)]\)" <>
+                  " - r\!\(\*SubsuperscriptBox[\(1\), \(\), \(2\)]\)) = " <>
+                  ToString[NumberForm[dSc, {4, 1}]] <>
+                  "  (P/P\!\(\*SubscriptBox[\(c\), \(\)]\) = " <>
+                  ToString[prCoex] <> ")",
+                  8, col],
+            Background -> White, FrameStyle -> col,
+            RoundingRadius -> 3],
+          {0.97 xLim, yInset}, {Right, Center}]
+      }
+    ],
+    {iGap, 1, 2}
+  ], 2
+];
+
+(* Fig 10 : S(T) trace DIRECTEMENT via Plot sur les branches physiques *)
+(* Memes branches que pour G(T) : k=1 PTN, k=2 instable, k=3 GTN          *)
+(* Raccord de la branche GTN au-dessus de T_max : k=1 par unicite         *)
+
+g10curves = Flatten[Table[
+  Module[{Pv = pratiosST[[i]] * PcN, divs, sty, rMax = 12.0},
+    divs = findCPdivs[Pv];
+    sty = stylesST[[i]];
+    If[Length[divs] == 2,
+      {
+        (* 1. PTN : de r+ -> Q jusqu'au premier point spinodal *)
+        ParametricPlot[{TRN[rp, Pv], SRN[rp]}, {rp, QQ + 0.001, divs[[1]]},
+          PlotStyle -> sty, PlotPoints -> 100, WorkingPrecision -> MachinePrecision],
+          
+        (* 2. Branche instable : entre les deux divergences de Cp *)
+        ParametricPlot[{TRN[rp, Pv], SRN[rp]}, {rp, divs[[1]], divs[[2]]},
+          PlotStyle -> {sty[[1]], Thin, Dashed, Opacity[0.6]}, PlotPoints -> 100, 
+          WorkingPrecision -> MachinePrecision],
+          
+        (* 3. GTN : du second point spinodal jusqu'\[AGrave] rMax *)
+        ParametricPlot[{TRN[rp, Pv], SRN[rp]}, {rp, divs[[2]], rMax},
+          PlotStyle -> sty, PlotPoints -> 100, WorkingPrecision -> MachinePrecision]
+      },
+      (* Phase supercritique (P >= Pc) : branche unique sans divergence *)
+      ParametricPlot[{TRN[rp, Pv], SRN[rp]}, {rp, QQ + 0.001, rMax},
+        PlotStyle -> sty, PlotPoints -> 150, WorkingPrecision -> MachinePrecision]
+    ]
+  ],
+  {i, Length[pratiosST]}
+]];
+
+g10 = Legended[
+  Show[g10curves,
+    Frame -> True,
+    FrameLabel -> {Style["T", 16], Style["S", 16]},
+    PlotRange -> {{0, 0.08}, {0, 200}},
+    AspectRatio -> 1/GoldenRatio,
+    PlotLabel -> Style["S(T) \[LongDash] Reissner-Nordstr\[ODoubleDot]m-AdS (Q = 1, trace direct)", 13, Bold],
+    Epilog -> gapEpilog,
+    GridLines -> Automatic,
+    GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+    ImageSize -> 500,
+    Background -> White
+  ],
+  Placed[
+    LineLegend[Table[Directive[colorF[i], Thick], {i, Length[pratiosST]}],
+      Table[Style["P/P\!\(\*SubscriptBox[\(c\), \(\)]\) = " <> ToString[pratiosST[[i]]], 10],
+            {i, Length[pratiosST]}]],
+    {Left, Top}]
+];
+saveFig[g10, "fig10_ST_rn"];
+
+(* Fig 11 : diagramme de phase P-T *)
+Pfull = Join[{0}, Pcoex, {0.004}];
+Tfull = Join[{0}, Tcoex, {TcN}];
+g11 = Legended[
+  Show[
+    Graphics[{Opacity[0.12], Blue,
+      FilledCurve[{Line[
+        Prepend[Transpose[{Tcoex, Pcoex}], {0, 0}] ~Join~
+        {{0, 0.004}, {0, 0}}
+      ]}]
+    }],
+    Graphics[{Opacity[0.12], Red,
+      FilledCurve[{Line[
+        Transpose[{Tcoex, Pcoex}] ~Join~
+        {{0.085, Pcoex[[-1]]}, {0.085, 0}, {Tcoex[[1]], 0}}
+      ]}]
+    }],
+    ListLinePlot[Transpose[{Tcoex, Pcoex}],
+      PlotStyle -> {colorF[1], Thick},
+      PlotRange -> {{0, 0.085}, {0, 0.004}}],
+    Graphics[{Red, PointSize[0.022], Point[{TcN, PcN}]}],
+    Graphics[{
+      Inset[Style["Phase PTN\n(petit trou noir)", Bold, 12, colorF[1]], {0.018, 0.002}],
+      Inset[Style["Phase GTN\n(grand trou noir)", Bold, 12, colorF[2]], {0.065, 0.002}],
+      Inset[Framed[Style["C(T\!\(\*SubscriptBox[\(c\), \(\)]\) = " <>
+                         ToString[NumberForm[TcN, {5,4}]] <>
+                         ", P\!\(\*SubscriptBox[\(c\), \(\)]\) = " <>
+                         ToString[NumberForm[PcN, {5,4}]] <> ")",
+                         9, Bold, Red],
+            Background -> White, FrameStyle -> Red, RoundingRadius -> 3],
+       {TcN - 0.006, PcN + 0.0003}]
+    }],
+    Frame -> True,
+    FrameLabel -> {Style["T", 16], Style["P", 16]},
+    PlotRange -> {{0, 0.085}, {0, 0.004}},
+    AspectRatio -> 0.6,
+    PlotLabel -> Style["Diagramme de phase P-T \[LongDash] RN-AdS (Q = 1)", 13, Bold],
+    GridLines -> Automatic,
+    GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+    ImageSize -> 500
+  ],
+  Placed[
+    Column[{
+      LineLegend[
+        {Directive[colorF[1], Thick]},
+        {Style["Ligne de coexistence", 10]},
+        LegendMarkerSize -> {18, 3}, LegendMargins -> {2, 0}
+      ],
+      PointLegend[
+        {Directive[Red, PointSize[0.02]]},
+        {Style["Point critique C", 10]},
+        LegendMarkerSize -> 9, LegendMargins -> {2, 0}
+      ]
+    }, Spacings -> 0.1, Alignment -> Left],
+    {0.85, 0.90}
+  ]
+];
+saveFig[g11, "fig11_PT_phase"];
+
+(* Fig 12 : Phi(r+) *)
+g12 = Plot[PhiRN[rp], {rp, QQ + 0.01, 10},
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> {colorF[5], Thick},
+  FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16],
+                 Style["\[CapitalPhi]", 18]},
+  PlotRange -> {{0, 10}, {0, 1.2}},
+  PlotLabel -> Style["Potentiel \[EAcute]lectrique \[CapitalPhi](r\!\(\*SubscriptBox[\(+\), \(\)]\)) \[LongDash] RN-AdS (Q = 1)", 13, Bold],
+  Epilog -> {GrayLevel[0.5], Dashed,
+    Line[{{0, 1}, {10, 1}}],
+    Inset[Style["\[CapitalPhi] = 1 (extr\[EAcute]mal)", Italic, 10, GrayLevel[0.5]], {5.5, 1.025}]},
+  PlotLegends -> Placed[
+    LineLegend[{colorF[5]}, {Style["\[CapitalPhi] = Q/r\!\(\*SubscriptBox[\(+\), \(\)]\)", 12]}],
+    {Right, Top}]
+];
+saveFig[g12, "fig12_Phi_rp_rn"];
+
+(* Fig 13 : M(r+) enthalpie *)
+pratiosM = {0.5, 1.0, 1.5};
+stylesM = Table[If[pratiosM[[i]] == 1.0,
+                   {colorF[i], Thick, Dashing[{0.02, 0.01}]},
+                   {colorF[i], Thick}],
+                {i, Length[pratiosM]}];
+g13 = Plot[
+  Evaluate[Table[MRN[rp, pr * PcN], {pr, pratiosM}]],
+  {rp, QQ + 0.01, 8},
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> stylesM,
+  FrameLabel -> {Style["r\!\(\*SubscriptBox[\(+\), \(\)]\)", 16],
+                 Style["M (Enthalpie)", 16]},
+  PlotRange -> {{0, 8}, Automatic},
+  PlotLabel -> Style["M(r\!\(\*SubscriptBox[\(+\), \(\)]\)) \[LongDash] RN-AdS (Q = 1)", 13, Bold],
+  PlotLegends -> Placed[
+    LineLegend[Table[colorF[i], {i, Length[pratiosM]}],
+      Table[Style["P/P\!\(\*SubscriptBox[\(c\), \(\)]\) = " <> ToString[pratiosM[[i]]], 10],
+            {i, Length[pratiosM]}]],
+    {Left, Top}]
+];
+saveFig[g13, "fig13_M_rp_rn"];
+
+
+(* ::Section::Closed:: *)
+(*Tableau r\[EAcute]capitulatif comparatif*)
+
+
+Print["\n", StringRepeat["=", 60]];
+Print["TABLEAU R\[CapitalEAcute]CAPITULATIF COMPARATIF"];
+Print[StringRepeat["=", 60]];
+
+tableau = Grid[{
+  {Style["Propri\[EAcute]t\[EAcute]", Bold, 12],
+   Style["Schwarzschild", Bold, 12],
+   Style["Schw.-AdS", Bold, 12],
+   Style["RN-AdS", Bold, 12]},
+
+  {"T(r\!\(\*SubscriptBox[\(+\), \(\)]\))",
+   "1/(4\[Pi]r\!\(\*SubscriptBox[\(+\), \(\)]\))",
+   "1/(4\[Pi]r\!\(\*SubscriptBox[\(+\), \(\)]\)) + 2Pr\!\(\*SubscriptBox[\(+\), \(\)]\)",
+   "1/(4\[Pi]r\!\(\*SubscriptBox[\(+\), \(\)]\)) - \!\(\*SuperscriptBox[\(Q\), \(2\)]\)/(4\[Pi]r\!\(\*SubsuperscriptBox[\(+\), \(\), \(3\)]\)) + 2Pr\!\(\*SubscriptBox[\(+\), \(\)]\)"},
+
+  {"G(r\!\(\*SubscriptBox[\(+\), \(\)]\))",
+   "r\!\(\*SubscriptBox[\(+\), \(\)]\)/4",
+   "r\!\(\*SubscriptBox[\(+\), \(\)]\)/4 - 2\[Pi]Pr\!\(\*SubsuperscriptBox[\(+\), \(\), \(3\)]\)/3",
+   "r\!\(\*SubscriptBox[\(+\), \(\)]\)/4 + 3\!\(\*SuperscriptBox[\(Q\), \(2\)]\)/(4r\!\(\*SubscriptBox[\(+\), \(\)]\)) - 2\[Pi]Pr\!\(\*SubsuperscriptBox[\(+\), \(\), \(3\)]\)/3"},
+
+  {"Monotonie T", "\[DownArrow] (stricte)", "Min unique", "Min + Max (P < Pc)"},
+  {"Signe C",     "< 0 partout", "< 0 (PTN), > 0 (GTN)", "3 branches"},
+  {"Transition",  "Aucune", "Hawking-Page", "PTN/GTN (type vdW)"},
+  {"Point critique", "Non", "Non", "Oui (PcVc/Tc = 3/8)"}
+  },
+  Frame -> All,
+  Background -> {{LightBlue, None}, {{LightGray, White}}},
+  Spacings -> {2, 1},
+  Alignment -> Center
+];
+
+Print[tableau];
+Print["\n", StringRepeat["=", 60]];
+Print["TOUTES LES FIGURES EXPORT\[CapitalEAcute]ES dans : ", outDir];
+Print[StringRepeat["=", 60]];
+
+
+

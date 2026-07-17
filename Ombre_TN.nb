@@ -1,0 +1,1022 @@
+(* ::Package:: *)
+
+(* ::Title:: *)
+(*Reproduction 2 \[LongDash] Ombre des trous noirs Schwarzschild-AdS et RN-AdS*)
+
+
+(* ::Subtitle:: *)
+(*Socle geometrique D=4 : Singh & Ghosh, Annals Phys. 395, 127 (2018), arXiv:1707.07125 ;*)
+(*extension au regime AdS charge (criticite van der Waals) : Wei & Liu, Phys. Rev. D 97,*)
+(*104027 (2018), arXiv:1711.01522, et Kubiznak-Mann, JHEP 1207, 033 (2012), arXiv:1205.0559*)
+(*Stage S4 \[LongDash] LPHEAG, Universite Cadi Ayyad, Marrakech*)
+(*Auteur : Hamza Alioua | Encadrant : Dr. S. Iraoui | Mai 2026*)
+
+
+(* ::Section::Closed:: *)
+(*0. Initialisation*)
+
+
+ClearAll["Global`*"];
+$Assumptions = {r > 0, rh > 0, rps > 0, M > 0, Lv > 0, Ev > 0, Qv > 0, 
+                Pv > 0, ell > 0, T > 0, S > 0, omega > 0};
+
+outDir = FileNameJoin[{NotebookDirectory[], "figures_ombre_Ma"}];
+If[!DirectoryQ[outDir], CreateDirectory[outDir]];
+
+SetOptions[Plot, 
+  Frame -> True, FrameStyle -> Directive[Black, 14],
+  LabelStyle -> Directive[FontFamily -> "Times New Roman", 14],
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> Thick, ImageSize -> 500, Background -> White];
+
+SetOptions[ListLinePlot, 
+  Frame -> True, FrameStyle -> Directive[Black, 14],
+  LabelStyle -> Directive[FontFamily -> "Times New Roman", 14],
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> Thick, ImageSize -> 700, Background -> White];
+
+hexToRGB[h_String] := RGBColor @@ (IntegerDigits[
+  FromDigits[StringTake[h, {2, -1}], 16], 256, 3] / 255.);
+
+colPalette = {"#2166AC", "#D6604D", "#4DAF4A", "#FF7F00",
+              "#984EA3", "#A65628", "#E41A1C", "#377EB8"};
+cF[i_]   := hexToRGB[colPalette[[i]]];
+orbitCol = RGBColor[139/255, 69/255, 19/255];
+
+(* Typographie : variables en italique, indices en romain *)
+mIt[s_, sz_:14] := Style[s, FontFamily -> "Times New Roman", Italic, sz, Black];
+mTx[s_, sz_:14] := Style[s, FontFamily -> "Times New Roman", FontWeight -> "Plain", sz, Black];
+
+rpsLab[sz_:14]  := Subscript[mIt["r", sz], mTx["ps", Round[0.78 sz]]];
+RsLab[sz_:14]   := Subscript[mIt["R", sz], mTx["s", Round[0.78 sz]]];
+TcLab[sz_:14]   := Subscript[mIt["T", sz], mTx["c", Round[0.78 sz]]];
+PcLab[sz_:14]   := Subscript[mIt["P", sz], mTx["c", Round[0.78 sz]]];
+THPLab[sz_:14]  := Subscript[mIt["T", sz], mTx["HP", Round[0.78 sz]]];
+TminLab[sz_:14] := Subscript[mIt["T", sz], mTx["min", Round[0.78 sz]]];
+rpLab[sz_:14]  := Subscript[mIt["r", sz], mTx["+", Round[0.78 sz]]];
+VeffLab[sz_:14] := Row[{Subscript[mIt["V", sz], mTx["eff", Round[0.78 sz]]], 
+                        "(", mIt["r", sz], ")"}];
+
+mathIt[s_, sz_:11] := Style[s, FontFamily -> "Times New Roman", Italic, sz, Black];
+mathPl[s_, sz_:11] := Style[s, FontFamily -> "Times New Roman", FontWeight -> "Plain", sz, Black];
+
+saveFig[gr_, name_] := Module[{p1, p2},
+  p1 = FileNameJoin[{outDir, name <> ".pdf"}];
+  p2 = FileNameJoin[{outDir, name <> ".png"}];
+  Export[p1, gr, "PDF", ImageResolution -> 300];
+  Export[p2, gr, "PNG", ImageResolution -> 300];
+  Print["  [OK] " <> name]];
+
+M0 = 1.0;
+
+
+(* ::Section::Closed:: *)
+(*1. Derivations symboliques \[LongDash] Cas D=4 avec Lambda*)
+
+
+(* ::Subsection::Closed:: *)
+(*1.1  Metriques f(r) : Schwarzschild-AdS et RN-AdS*)
+
+
+fSchAdS[r_, Mv_, ellv_]     := 1 - 2 Mv/r + r^2/ellv^2;
+
+fRNAdS[r_, Mv_, Qv_, Pv_]   := 1 - 2 Mv/r + Qv^2/r^2 + (8 Pi Pv/3) r^2;
+
+Print["Schwarzschild-AdS : f(r) = ", fSchAdS[r, M, ell]];
+Print["RN-AdS            : f(r) = ", fRNAdS[r, M, Q, P]];
+
+
+(* ::Subsection::Closed:: *)
+(*1.2  Sphere de photons : condition 2f - r f' = 0*)
+
+
+condPsRN = Simplify[
+  2 fRNAdS[r0, M, Q, P] - r0 D[fRNAdS[r0, M, Q, P], r0]];
+Print["Condition 2f - r f' = 0 (RN-AdS) : ", condPsRN, " = 0"];
+
+solPsRN = Solve[condPsRN == 0, r0] // FullSimplify;
+Print["Solutions r_ps : ", solPsRN];
+
+(* r_ps est independant de P : seule la branche physique (racine positive) est retenue *)
+rpsRNAdS[Mv_, Qv_] := (3 Mv + Sqrt[9 Mv^2 - 8 Qv^2])/2;
+
+Print["r_ps (RN-AdS) = (3M + Sqrt[9M^2 - 8Q^2])/2  -- INDEPENDANT DE P"];
+Print["r_ps (Schwarzschild, Q=0) = 3M"];
+
+
+(* ::Subsection::Closed:: *)
+(*1.3  Rayon d ombre R_s = r_ps / Sqrt[f(r_ps)]*)
+
+
+RsSchAdS[Mv_, ellv_] := With[{rp = 3 Mv}, 
+  rp/Sqrt[fSchAdS[rp, Mv, ellv]]];
+
+RsRNAdS[Mv_, Qv_, Pv_] := With[{rp = rpsRNAdS[Mv, Qv]}, 
+  rp/Sqrt[fRNAdS[rp, Mv, Qv, Pv]]];
+
+RsSchAdSSym = FullSimplify[3 M0/Sqrt[fSchAdS[3 M0, M0, ell]]];
+Print["R_s Schwarzschild-AdS (M=1) = ", RsSchAdSSym];
+Print["Limite Lambda -> 0 : R_s -> ", Quiet[Limit[RsSchAdSSym, ell -> Infinity], Limit::alimv]];
+
+
+(* ::Subsection::Closed:: *)
+(*1.4  Point critique RN-AdS (Q=1)*)
+
+
+TRN[rh_, Pv_, Qv_] := (1/(4 Pi rh))(1 - Qv^2/rh^2 + 8 Pi Pv rh^2);
+MRN[rh_, Pv_, Qv_] := (rh/2)(1 + Qv^2/rh^2 + (8 Pi Pv/3) rh^2);
+
+critEqs = {D[TRN[rh, P, Q], rh] == 0, 
+           D[TRN[rh, P, Q], {rh, 2}] == 0};
+critSol = Solve[critEqs, {rh, P}, Reals] // FullSimplify;
+Print["Point critique : ", critSol];
+
+rcRN   = Sqrt[6];
+PcRN   = 1/(96 Pi);
+TcRN   = Sqrt[6]/(18 Pi);
+ScRN   = 6 Pi;
+
+Print["Pour Q = 1 :"];
+Print["  r_c = Sqrt[6]      = ", N[rcRN, 6]];
+Print["  P_c = 1/(96 pi)    = ", N[PcRN, 6]];
+Print["  T_c = Sqrt[6]/(18 pi) = ", N[TcRN, 6]];
+Print["  Ratio universel P_c v_c / T_c = ", N[PcRN 2 rcRN/TcRN, 6], 
+      "  (theorique 3/8 = 0.375)"];
+
+McRN   = MRN[rcRN, PcRN, 1];
+rPsCRN = rpsRNAdS[McRN, 1];
+
+Print["  M_c = ", N[McRN, 6]];
+Print["  r_{ps,c} = (2+Sqrt[6]) Q = ", N[rPsCRN, 6], 
+      "  (theorique = ", N[2 + Sqrt[6], 6], ")"];
+
+RsCRN = RsRNAdS[McRN, 1, PcRN];
+Print["  R_{s,c} = ", N[RsCRN, 6]];
+
+
+(* ::Subsection::Closed:: *)
+(*1.5  Transition de Hawking-Page (Schwarzschild-AdS)*)
+
+
+MSchAdS[rh_, ellv_] := (rh/2)(1 + rh^2/ellv^2);
+TSchAdS[rh_, ellv_] := (1/(4 Pi rh))(1 + 3 rh^2/ellv^2);
+
+solTmin = Solve[D[TSchAdS[rh, ell], rh] == 0 && rh > 0, rh, Reals];
+Print["r_h (T minimum) = ell/Sqrt[3] = ", rh /. First[solTmin]];
+
+rhMin    = ell/Sqrt[3];
+TminVal  = TSchAdS[rhMin, ell] // FullSimplify;
+THPval   = TSchAdS[ell, ell]   // FullSimplify;
+RsHPval  = RsSchAdS[ell, ell]  // FullSimplify;
+
+Print["T_min = Sqrt[3]/(2 pi ell) = ", TminVal];
+Print["T_HP  = 1/(pi ell)         = ", THPval];
+Print["R_s a Hawking-Page : 3 ell Sqrt[3/28] = ", RsHPval, 
+      " = ", N[RsHPval /. ell -> 10, 6], " (pour ell=10)"];
+
+
+(* ::Section::Closed:: *)
+(*2. Figure 1 \[LongDash] Potentiel effectif V_eff(r) Schwarzschild plat (D=4)*)
+
+
+Mplat = 0.5;
+VeffPhSch[r_, Lv_] := (1 - 2 Mplat/r)(Lv^2/r^2);
+LValues = {1.0, 2.0, 3.0, 4.0, 5.0};
+LColors = {cF[1], cF[8], cF[3], cF[4], cF[2]};
+maxPoints = Table[{1.5 * 2 * Mplat, Lv^2 / (27 * Mplat^2)}, {Lv, LValues}];
+
+fig71Plot = Plot[
+  Evaluate[Table[VeffPhSch[r, LValues[[i]]], {i, Length[LValues]}]], 
+  {r, 1.005, 4.0},
+  PlotStyle -> Table[Directive[LColors[[i]], Thickness[0.0035]], 
+                     {i, Length[LValues]}],
+  PlotRange -> {{1.0, 4.0}, {0, 4.5}},
+  Frame -> True,
+  FrameLabel -> {Row[{mIt["r", 14], "/", "2", mIt["M", 14]}], VeffLab[14]},
+  PlotLabel  -> Style[mTx["Potentiel effectif des photons \[LongDash] Schwarzschild plat (D=4, M=0.5)", 13], 
+                     Black, FontFamily -> "Times New Roman"],
+  PlotLegends -> Placed[
+    Table[Row[{mIt["L", 11], " = ", 
+               mTx[ToString[NumberForm[LValues[[i]], {3,1}]], 11]}],
+          {i, Length[LValues]}],
+    {0.85, 0.75}],
+  GridLines -> None,
+  ImageSize -> 600];
+
+fig71 = Show[
+  fig71Plot,
+  Graphics[{
+    GrayLevel[0.5], Dashing[0.01], Thickness[0.001],
+    Line[{{1.5, 0}, {1.5, 4.5}}],
+    Black, 
+    Text[Style[Row[{rpsLab[12], " = 3", mIt["M", 12]}], Background -> White], 
+         {1.50, 4.20}],
+    PointSize[0.012],
+    Sequence @@ Table[Point[maxPoints[[i]]], {i, Length[LValues]}]}]
+];
+
+saveFig[fig71, "fig1_Veff_photon_Sch"];
+
+
+(* ::Section::Closed:: *)
+(*3. Figure 2 \[LongDash] Ombres concentriques Schwarzschild D=4*)
+
+
+MValues72 = {0.45, 0.60, 0.65, 0.70, 0.75};
+MColors72 = {cF[1], cF[8], cF[3], cF[4], cF[2]};
+theta72   = Subdivide[0, 2 Pi, 800];
+
+cercles72 = Table[
+  With[{Rs = Sqrt[27.0] MValues72[[i]]},
+    Table[{Rs Cos[th], Rs Sin[th]}, {th, theta72}]],
+  {i, Length[MValues72]}];
+
+fig72 = ListLinePlot[cercles72,
+  PlotStyle -> Table[Directive[MColors72[[i]], Thickness[0.003]],
+                     {i, Length[MValues72]}],
+  PlotRange -> {{-4.5, 4.5}, {-4.5, 4.5}},
+  AspectRatio -> 1,
+  Frame -> True,
+  FrameLabel -> {Style["\[Alpha]", FontFamily -> "Times New Roman", Italic, 16, Black], 
+                 Style["\[Beta]",  FontFamily -> "Times New Roman", Italic, 16, Black]},
+  PlotLabel  -> Row[{mTx["Ombres concentriques Schwarzschild (D=4, ", 13], 
+                     Subscript[Style["\[Theta]", Italic, 13, FontFamily -> "Times New Roman"], 
+                               mTx["obs", 9]], 
+                     mTx[" = \[Pi]/2)", 13]}],
+  PlotLegends -> Placed[
+    Table[Row[{mIt["M", 11], " = ", 
+               mTx[ToString[NumberForm[MValues72[[i]], {3,2}]], 11]}],
+          {i, Length[MValues72]}],
+    Center], 
+  GridLines -> None,
+  Epilog -> {GrayLevel[0.5], Thickness[0.001],
+             Line[{{-4.5, 0}, {4.5, 0}}],
+             Line[{{0, -4.5}, {0, 4.5}}]},
+  ImageSize -> 600];
+
+saveFig[fig72, "fig2_ombres_Sch"];
+
+Print["Verification : alpha^2 + beta^2 = 27 M^2"];
+Print["  M = 0.75 : R_s = Sqrt[27] * 0.75 = ", N[Sqrt[27] 0.75, 5]];
+
+
+(* ::Section::Closed:: *)
+(*4. Figure 3 \[LongDash] R_s(P) Schwarzschild-AdS : signature Hawking-Page*)
+
+
+ellFix = 10.0;
+rhMinPhys = ellFix/Sqrt[3];
+
+(* Branche stable : r_h > ell/Sqrt[3] *)
+rhRange  = Subdivide[rhMinPhys 1.001, 5 ellFix, 3000];
+TstableData  = Table[
+  {TSchAdS[rh, ellFix] ellFix, RsSchAdS[MSchAdS[rh, ellFix], ellFix]/ellFix},
+  {rh, rhRange}];
+
+(* Branche instable : r_h < ell/Sqrt[3] *)
+rhSmall  = Subdivide[0.1 ellFix, rhMinPhys 0.999, 500];
+TinstableData = Table[
+  {TSchAdS[rh, ellFix] ellFix, RsSchAdS[MSchAdS[rh, ellFix], ellFix]/ellFix},
+  {rh, rhSmall}];
+
+THP    = 1/(Pi ellFix);
+Tmin73 = Sqrt[3]/(2 Pi ellFix);
+RsHP   = RsSchAdS[ellFix, ellFix]/ellFix;
+
+Print["T_HP * ell  = ", N[THP ellFix, 6]];
+Print["T_min * ell = ", N[Tmin73 ellFix, 6]];
+Print["R_s/ell a HP = ", N[RsHP, 6], " (theorique 3 Sqrt[3/28] = ", 
+      N[3 Sqrt[3/28], 6], ")"];
+
+ellSym      = Style["\[ScriptL]", FontFamily -> "Times New Roman", Italic, 14, Black];
+ellSymSm    = Style["\[ScriptL]", FontFamily -> "Times New Roman", Italic, 11, Black];
+
+fig73a = ListLinePlot[
+  {TstableData, TinstableData},
+  PlotStyle -> {Directive[cF[1], Thickness[0.0035]],
+                Directive[cF[2], Thickness[0.0025], Dashing[0.02]]},
+  PlotRange -> {{0.20, 1.0}, {0.0, 1.1}}, 
+  FrameLabel -> {Row[{mIt["T", 14], " ", ellSym}], 
+                 Row[{RsLab[14], " / ", ellSym}]},
+  PlotLabel  -> Row[{mTx["(a) ", 12], RsLab[12], 
+                     "(", mIt["T", 12],")" mTx[" Schwarzschild-AdS, ", 12], 
+                     ellSymSm, mTx[" = 10", 12]}],
+  Epilog -> {
+    GrayLevel[0.5], Dashing[0.005], Thickness[0.0010],
+    Line[{{THP ellFix, 0.0}, {THP ellFix, 1.1}}],
+    Line[{{Tmin73 ellFix, 0.0}, {Tmin73 ellFix, 1.1}}],
+    cF[3], PointSize[0.025], Point[{THP ellFix, RsHP}],
+    Black, 
+    Text[Style[THPLab[11], Background -> White], {THP ellFix + 0.035, 1.02}],
+    Text[Style[TminLab[11], Background -> White], {Tmin73 ellFix - 0.030, 1.02}]},
+  PlotLegends -> Placed[
+    LineLegend[
+      {Directive[cF[1], Thickness[0.0035]], 
+       Directive[cF[2], Thickness[0.0025], Dashing[0.02]]},
+      {mTx["Grande TN (stable)", 11], mTx["Petite TN (instable)", 11]}
+    ],
+    {0.65, 0.60}], 
+  ImagePadding -> {{55, 15}, {45, 15}},
+  GridLines -> None, ImageSize -> 500];
+
+ellVar = Subdivide[0.5, 30.0, 800];
+PvarData = Table[
+  {3/(8 Pi ellv^2), RsSchAdS[1.0, ellv]},
+  {ellv, ellVar}];
+
+fig73b = ListLinePlot[PvarData,
+  PlotStyle -> Directive[cF[1], Thickness[0.0035]],
+  PlotRange -> {{0, 0.2}, {0, 6}},
+  FrameLabel -> {mIt["P", 14], Row[{RsLab[14], " / ", mIt["M", 14]}]},
+  PlotLabel  -> Row[{mTx["(b) ", 12], RsLab[12], 
+                     "(", mIt["P", 12],")" mTx[" Schwarzschild-AdS, ", 12], 
+                     mIt["M", 12], mTx[" = 1", 12]}],
+  Epilog -> {
+    cF[2], Dashing[0.015], Thickness[0.0025],
+    Line[{{0, Sqrt[27]}, {0.2, Sqrt[27]}}]}, 
+  PlotLegends -> Placed[
+    LineLegend[
+      {Directive[cF[1], Thickness[0.0035]], 
+       Directive[cF[2], Dashing[0.015], Thickness[0.0025]]},
+      {mTx["Schwarzschild-AdS", 11], 
+       Row[{mTx["Limite plate : ", 11], RsLab[11], mTx[" \[Rule] \[Sqrt]27 ", 11], mIt["M", 11]}]}
+    ],
+    {0.65, 0.60}],
+  ImagePadding -> {{55, 15}, {45, 15}},
+  GridLines -> None, ImageSize -> 500];
+
+fig73 = GraphicsRow[{fig73a, fig73b}, ImageSize -> 1150, Spacings -> 40];
+saveFig[fig73, "fig3_Rs_HP_SchAdS"];
+
+
+(* ::Section::Closed:: *)
+(*5. Figure 4 \[LongDash] T(R_s) RN-AdS \[LongDash] signature VdW PTN/GTN*)
+
+
+QV74 = 1.0;
+TcRN74 = Sqrt[6]/(18 Pi QV74);
+PcRN74 = 1/(96 Pi QV74^2);
+rcRN74 = Sqrt[6] QV74;
+TRN74[rh_, Pv_] := (1/(4 Pi rh))*
+  (1 - QV74^2/rh^2 + 8 Pi Pv rh^2);
+MRN74[rh_, Pv_] := (rh/2)*
+  (1 + QV74^2/rh^2 + (8 Pi Pv/3) rh^2);
+rpsRN74[rh_, Pv_] := With[
+  {Mv = MRN74[rh, Pv]},
+  (3 Mv + Sqrt[9 Mv^2 - 8 QV74^2])/2
+];
+RsRN74[rh_, Pv_] := With[
+  {rps = rpsRN74[rh, Pv]},
+  rps/Sqrt[fRNAdS[rps, MRN74[rh, Pv], QV74, Pv]]
+];
+
+(* Rayon de l'horizon extr\[EAcute]mal : T_H = 0 *)
+rhExtrem74[Pv_] := Module[
+  {aP = 8 Pi Pv, bP = 1, cP = -QV74^2},
+  Sqrt[(-bP + Sqrt[bP^2 - 4 aP cP])/(2 aP)]
+];
+
+(* Courbe param\[EAcute]trique T(R_s) : R_s en abscisse, T en ordonn\[EAcute]e *)
+makeBranch74[Pr_, n_: 4000] := Module[
+  {Pv, rhLo, rhArr, pts},
+  Pv = Pr PcRN74;
+  rhLo = rhExtrem74[Pv] 1.0005;
+  rhArr = Subdivide[rhLo, Max[12.0, 4 rcRN74], n];
+  pts = Table[
+    With[
+      {
+        Tv = TRN74[rh, Pv],
+        Rsv = RsRN74[rh, Pv]
+      },
+      If[
+        NumericQ[Tv] && NumericQ[Rsv] && Tv > 0 && Rsv > 0,
+        {Rsv, Tv},
+        Nothing
+      ]
+    ],
+    {rh, rhArr}
+  ];
+
+  DeleteCases[pts, Nothing]
+];
+branchSub74 = makeBranch74[0.6];
+branchCrit74 = makeBranch74[1.0];
+branchSup74 = makeBranch74[1.5];
+
+(* Construction de Maxwell dans le plan thermodynamique conjugu\[EAcute] (T,S) *)
+maxwellRN74[Pr_] := Module[
+  {
+    Pv, rhLo, rhMaxLoc, rhMinLoc, TmaxLoc, TminLoc,
+    TCoex, integFn, rhTest, Ttest, dT, scChanges, eps
+  },
+
+  Pv = Pr PcRN74;
+  rhLo = rhExtrem74[Pv] 1.0005;
+
+  rhTest = Subdivide[rhLo, 10.0, 5000];
+  Ttest = TRN74[#, Pv] & /@ rhTest;
+  dT = Differences[Ttest];
+
+  scChanges =
+    Flatten[Position[Differences[Sign[dT]], _?(# != 0 &)]];
+
+  If[Length[scChanges] < 2, Return[$Failed]];
+
+  rhMaxLoc = rhTest[[scChanges[[1]] + 1]];
+  rhMinLoc = rhTest[[scChanges[[2]] + 1]];
+
+  TmaxLoc = TRN74[rhMaxLoc, Pv];
+  TminLoc = TRN74[rhMinLoc, Pv];
+
+  integFn[TC_?NumericQ] := Module[
+    {rA, rB, rC},
+    rA = rh /. Quiet@FindRoot[
+      TRN74[rh, Pv] == TC,
+      {rh, (rhLo + rhMaxLoc)/2, rhLo, rhMaxLoc}
+    ];
+    rB = rh /. Quiet@FindRoot[
+      TRN74[rh, Pv] == TC,
+      {rh, (rhMaxLoc + rhMinLoc)/2, rhMaxLoc, rhMinLoc}
+    ];
+    rC = rh /. Quiet@FindRoot[
+      TRN74[rh, Pv] == TC,
+      {
+        rh,
+        (rhMinLoc + Max[12.0, 4 rcRN74])/2,
+        rhMinLoc,
+        Max[12.0, 4 rcRN74]
+      }
+    ];
+    Quiet@NIntegrate[
+      (TRN74[rh, Pv] - TC) 2 Pi rh,
+      {rh, rA, rB, rC},
+      Method -> "LocalAdaptive",
+      AccuracyGoal -> 8,
+      PrecisionGoal -> 4,
+      MaxRecursion -> 20
+    ]
+  ];
+
+  eps = (TmaxLoc - TminLoc) 0.01;
+
+  Quiet@Check[
+    TCoex = TC /. FindRoot[
+      integFn[TC] == 0,
+      {
+        TC,
+        (TmaxLoc + TminLoc)/2,
+        TminLoc + eps,
+        TmaxLoc - eps
+      }
+    ],
+    Return[$Failed]
+  ];
+
+  {TCoex, rhMaxLoc, rhMinLoc}
+];
+
+maxwell74 = maxwellRN74[0.6];
+
+If[
+  maxwell74 =!= $Failed,
+
+  {TCoex74, rhMaxLoc74, rhMinLoc74} = maxwell74;
+  Pv06 = 0.6 PcRN74;
+
+  rh1Mx = rh /. FindRoot[
+    TRN74[rh, Pv06] == TCoex74,
+    {
+      rh,
+      rhExtrem74[Pv06] 1.001,
+      rhExtrem74[Pv06] 1.001,
+      rhMaxLoc74
+    }
+  ];
+
+  rh3Mx = rh /. FindRoot[
+    TRN74[rh, Pv06] == TCoex74,
+    {
+      rh,
+      (rhMinLoc74 + Max[12.0, 4 rcRN74])/2,
+      rhMinLoc74,
+      Max[12.0, 4 rcRN74]
+    }
+  ];
+
+  RsPTN74 = RsRN74[rh1Mx, Pv06];
+  RsGTN74 = RsRN74[rh3Mx, Pv06];
+
+  Print["Maxwell P_r = 0.6 :"];
+  Print[
+    "  T_coex   = ", N[TCoex74, 6],
+    " (= ", N[TCoex74/TcRN74, 5], " T_c)"
+  ];
+  Print[
+    "  r_h(PTN) = ", N[rh1Mx, 5],
+    " ; R_s(PTN) = ", N[RsPTN74, 5]
+  ];
+  Print[
+    "  r_h(GTN) = ", N[rh3Mx, 5],
+    " ; R_s(GTN) = ", N[RsGTN74, 5]
+  ];
+  Print["  Delta R_s = ", N[RsGTN74 - RsPTN74, 5]],
+
+  Print["La construction de Maxwell a \[EAcute]chou\[EAcute]."]
+];
+
+RsCRN74val = RsRN74[rcRN74, PcRN74];
+Print["R_s critique = ", N[RsCRN74val, 6]];
+
+DeltaSym = Style[
+  "\[CapitalDelta]",
+  FontFamily -> "Times New Roman",
+  Italic,
+  12,
+  Black
+];
+
+fig74 = ListLinePlot[
+  {
+    branchSub74,
+    branchCrit74,
+    branchSup74
+  },
+  PlotStyle -> {
+    Directive[cF[2], Thickness[0.0035]],
+    Directive[RGBColor[0.5, 0.31, 0.14], Thickness[0.0035]],
+    Directive[cF[1], Thickness[0.0035]]
+  },
+  PlotRange -> {
+    {3.5, 11.0},
+    {0.005, 0.065}
+  },
+  FrameLabel -> {
+    RsLab[14],
+    mIt["T", 14]
+  },
+  PlotLabel -> Row[
+    {
+      mTx["Diagramme ", 13],
+      mIt["T", 13],
+      mTx[" - ", 13],
+      RsLab[13],
+      mTx[" pour RN-AdS (", 13],
+      mIt["Q", 13],
+      mTx[" = 1) \[AGrave] pressions fixes", 13]
+    }
+  ],
+
+  PlotLegends -> Placed[
+    {
+      Row[
+        {
+          mIt["P", 11],
+          " = 0.6 ",
+          PcLab[11],
+          mTx[" (sous-critique)", 11]
+        }
+      ],
+      Row[
+        {
+          mIt["P", 11],
+          " = ",
+          PcLab[11],
+          mTx[" (critique)", 11]
+        }
+      ],
+      Row[
+        {
+          mIt["P", 11],
+          " = 1.5 ",
+          PcLab[11],
+          mTx[" (supercritique)", 11]
+        }
+      ]
+    },
+    {0.80, 0.25}
+  ],
+  Epilog -> Join[
+    {
+      GrayLevel[0.5],
+      Dashing[0.01],
+      Thickness[0.0008],
+
+      (* Ligne horizontale T = T_c *)
+      Line[
+        {
+          {3.5, TcRN74},
+          {11.0, TcRN74}
+        }
+      ],
+      Black,
+      Text[
+        Style[TcLab[11], Background -> White],
+        {10.0, TcRN74 + 0.0015}
+      ],
+      Black,
+      PointSize[0.015],
+      Point[{RsCRN74val, TcRN74}]
+    },
+
+    If[
+      maxwell74 =!= $Failed,
+      {
+        Black,
+        Dashing[0.005],
+        Thickness[0.0010],
+
+        (* Palier horizontal de coexistence *)
+        Line[
+          {
+            {RsPTN74, TCoex74},
+            {RsGTN74, TCoex74}
+          }
+        ],
+        cF[3],
+        PointSize[0.015],
+        Point[{RsPTN74, TCoex74}],
+        Point[{RsGTN74, TCoex74}],
+        Black,
+        Text[
+          Style[
+            Subscript[mIt["T", 11], mTx["coex", 9]],
+            Background -> White
+          ],
+          {
+            (RsPTN74 + RsGTN74)/2,
+            TCoex74 + 0.0012
+          }
+        ],
+        Text[
+          Style[mTx["PTN", 11], Background -> White],
+          {RsPTN74, TCoex74 + 0.0028}
+        ],
+        Text[
+          Style[mTx["GTN", 11], Background -> White],
+          {RsGTN74, TCoex74 + 0.0028}
+        ],
+
+        (* Saut horizontal Delta R_s *)
+        Thickness[0.0015],
+        Arrowheads[{-0.013, 0.013}],
+        Arrow[
+          {
+            {RsPTN74 + 0.15, TCoex74 - 0.0040},
+            {RsGTN74 - 0.15, TCoex74 - 0.0040}
+          }
+        ],
+        Text[
+          Style[
+            Row[{DeltaSym, RsLab[12]}],
+            Background -> White
+          ],
+          {
+            (RsPTN74 + RsGTN74)/2,
+            TCoex74 - 0.0065
+          }
+        ]
+      },
+      {}
+    ]
+  ],
+  GridLines -> None,
+  ImageSize -> 720
+];
+saveFig[fig74, "fig4_Rs_T_RNAdS"];
+
+
+(* ::Section::Closed:: *)
+(*6. V\[EAcute]rification num\[EAcute]rique de l'exposant critique \[Beta] = 1/2 (plan optique)*)
+
+
+(* Balayage isobarique sous-critique : pour chaque isobare, le saut                  *)
+(* Delta R_s = R_s^GTN - R_s^PTN a la coexistence de Maxwell est reporte en fonction  *)
+(* de |t| = 1 - T_coex/T_c. La pente log-log proche-critique confirme                 *)
+(* Delta R_s ~ |t|^{1/2} (champ moyen, beta = 1/2).                                   *)
+
+PrBeta74 = Join[Subdivide[0.45, 0.90, 15], Subdivide[0.91, 0.992, 11]];
+rhFar74  = Max[12.0, 4 rcRN74];
+
+betaData74 = DeleteCases[
+  Table[
+    Module[{mw = maxwellRN74[Pr], Pv, Tco, rh1, rh3, dRs, tAbs},
+      If[mw === $Failed, Nothing,
+        Pv  = Pr PcRN74;
+        Tco = mw[[1]];
+        rh1 = rh /. Quiet @ FindRoot[TRN74[rh, Pv] == Tco,
+                {rh, rhExtrem74[Pv] 1.001, rhExtrem74[Pv] 1.001, mw[[2]]}];
+        rh3 = rh /. Quiet @ FindRoot[TRN74[rh, Pv] == Tco,
+                {rh, (mw[[3]] + rhFar74)/2, mw[[3]], rhFar74}];
+        dRs  = RsRN74[rh3, Pv] - RsRN74[rh1, Pv];
+        tAbs = 1 - Tco/TcRN74;
+        If[NumericQ[dRs] && NumericQ[tAbs] && tAbs > 0 && dRs > 0,
+           {tAbs, dRs}, Nothing]
+      ]
+    ],
+    {Pr, PrBeta74}
+  ],
+  Nothing];
+
+(* Ajustement log-log restreint a la fenetre proche-critique |t| <= tCut74 *)
+tCut74     = 0.03;
+betaNear74 = Select[betaData74, #[[1]] <= tCut74 &];
+logFit74   = LinearModelFit[({Log[#[[1]]], Log[#[[2]]]} &) /@ betaNear74, x, x];
+betaNum74  = logFit74["BestFitParameters"][[2]];
+aFit74     = logFit74["BestFitParameters"][[1]];
+Print["  beta numerique (pente log-log, |t| <= ", tCut74, ") = ",
+      NumberForm[betaNum74, {4, 3}], "  (theorique 1/2)"];
+
+(* Figure 4b : Delta R_s vs |t| en echelle log-log *)
+tMinB74   = Min[betaData74[[All, 1]]];
+tMaxB74   = Max[betaData74[[All, 1]]];
+anchorB74 = First @ SortBy[betaData74, First];
+C12n74    = anchorB74[[2]]/Sqrt[anchorB74[[1]]];
+legBox = Framed[
+  Grid[{
+    {Graphics[{EdgeForm[Black], FaceForm[cF[2]], Disk[]}, ImageSize -> 11], 
+     Style["points proche-critiques (|t| \[LessEqual] 0.03)", 12, FontFamily -> "Times New Roman"]},
+    {Graphics[{EdgeForm[Directive[Thick, cF[2]]], FaceForm[White], Disk[]}, ImageSize -> 11], 
+     Style["points hors r\[EAcute]gime asymptotique", 12, FontFamily -> "Times New Roman"]},
+    {Graphics[{Black, Thickness[0.15], Line[{{0, 0}, {1, 0}}]}, ImageSize -> {25, 12}], 
+     Style[Row[{"ajustement proche-critique : pente = ", NumberForm[betaNum74, {4, 3}]}], 12, FontFamily -> "Times New Roman"]},
+    {Graphics[{RGBColor[0.5, 0.31, 0.14], Dashing[{0.15, 0.1}], Thickness[0.15], Line[{{0, 0}, {1, 0}}]}, ImageSize -> {25, 12}], 
+     Style["pente 1/2 (champ moyen)", 12, FontFamily -> "Times New Roman"]}
+   }, Alignment -> Left, Spacings -> {0.8, 0.5}],
+  RoundingRadius -> 3, FrameStyle -> GrayLevel[0.4], Background -> White, ContentPadding -> True
+];
+
+resBox = Framed[
+  Style[Row[{Subscript[Style["\[Beta]", Italic], "num"], " \[TildeEqual] ", 
+             NumberForm[betaNum74, {3, 2}], "  \[RightArrow]  ", 
+             Subscript[Style["\[Beta]", Italic], "theo"], " = 1/2"}], 
+        14, FontFamily -> "Times New Roman"],
+  RoundingRadius -> 3, FrameStyle -> GrayLevel[0.5], Background -> RGBColor[0.98, 0.98, 0.92], ContentPadding -> True
+];
+
+fig4b = Show[
+  ListLogLogPlot[
+    {Select[betaData74, #[[1]] <= tCut74 &],
+     Select[betaData74, #[[1]] >  tCut74 &]},
+    PlotMarkers -> {
+      {Graphics[{EdgeForm[Black], FaceForm[cF[2]], Disk[]}], 0.04},
+      {Graphics[{EdgeForm[Directive[Thick, cF[2]]], FaceForm[White], Disk[]}], 0.04}
+    }
+  ],
+  LogLogPlot[
+    {Exp[aFit74] t^betaNum74, C12n74 Sqrt[t]},
+    {t, 0.8 tMinB74, 1.1 tMaxB74},
+    PlotStyle -> {
+      Directive[Black, Thickness[0.004]],
+      Directive[RGBColor[0.5, 0.31, 0.14], Dashing[{0.02, 0.015}], Thickness[0.004]]
+    }
+  ],
+  Frame -> True,
+  FrameLabel -> {
+    Style[Row[{"|", Style["t", Italic], "| = 1 \[Minus] ", Subscript[Overscript[Style["T", Italic], "~"], "coex"]}], 16, FontFamily -> "Times New Roman"],
+    Style[Row[{"\[CapitalDelta]", Subscript[Style["R", Italic], "s"], " = ", Subsuperscript[Style["R", Italic], "s", "GTN"], " \[Minus] ", Subsuperscript[Style["R", Italic], "s", "PTN"]}], 16, FontFamily -> "Times New Roman"]
+  },
+  PlotLabel -> Style[Row[{"Confirmation num\[EAcute]rique de ", Style["\[Beta]", Italic], " = 1/2 : \[CapitalDelta]", Subscript[Style["R", Italic], "s"], " \[Proportional] ", Superscript[Row[{"|", Style["t", Italic], "|"}], "1/2"], " (RN-AdS, ", Style["Q", Italic], " = 1)"}], 15, FontFamily -> "Times New Roman"],
+  PlotLegends -> None,
+  Epilog -> {
+    Inset[legBox, Scaled[{0.02, 0.98}], {Left, Top}],
+    Inset[resBox, Scaled[{0.98, 0.05}], {Right, Bottom}]
+  },
+  GridLines -> None, 
+  ImageSize -> 640,
+  BaseStyle -> {FontFamily -> "Times New Roman", FontSize -> 14}
+];
+saveFig[fig4b, "fig4b_beta_loglog"];
+
+
+(* ::Section::Closed:: *)
+(*7. Figure 5 \[LongDash] Diagramme P-T avec R_s en color-map*)
+
+
+(* Pour chaque point (T,P), on localise toutes les racines de T(r_h)=T par balayage de signe,
+   puis on retourne la moyenne de R_s sur les branches coexistantes.
+   La borne rhHi est dynamique pour capturer les trous noirs supermassifs a bas P. *)
+RsOfTP75[Tv_?NumericQ, Pv_?NumericQ] := Module[
+  {rhLo, rhHi, rhTest, Ttest, residual, roots, RsCandidates},
+  rhLo   = rhExtrem74[Pv]*1.0005;
+  rhHi   = Max[15.0, Tv / (1.5 * Pv) + 5.0]; 
+  rhTest = Subdivide[rhLo, rhHi, 250];
+  Ttest  = TRN74[#, Pv] & /@ rhTest;
+  residual = Ttest - Tv;
+  roots  = {};
+  
+  Do[
+    If[residual[[k]]*residual[[k + 1]] < 0,
+      AppendTo[roots,
+        rh /. Quiet @ FindRoot[
+          TRN74[rh, Pv] == Tv,
+          {rh, (rhTest[[k]] + rhTest[[k + 1]])/2, rhTest[[k]], rhTest[[k + 1]]}]]],
+    {k, 1, Length[rhTest] - 1}
+  ];
+  
+  If[Length[roots] == 0, Return[Indeterminate]];
+  RsCandidates = RsRN74[#, Pv] & /@ roots;
+  Mean[RsCandidates]
+];
+
+TgridN = 100;
+PgridN = 100;
+Tgrid75 = Subdivide[0.005, 0.080, TgridN];
+Pgrid75 = Subdivide[0.0005, 0.006, PgridN];
+
+Print["Calcul R_s sur grille ", TgridN, "x", PgridN, " (veuillez patienter ~30s)..."];
+
+RsMesh75 = Quiet @ Table[
+  RsOfTP75[Tgrid75[[i]], Pgrid75[[j]]],
+  {j, Length[Pgrid75]}, {i, Length[Tgrid75]}];
+
+Print["Calcul courbe de coexistence PTN/GTN..."];
+
+PrArr75 = Subdivide[0.015, 0.98, 45]; 
+coexPts75 = DeleteCases[
+  Quiet @ Table[
+    Module[{res = maxwellRN74[Pr]},
+      If[res === $Failed, Nothing, {res[[1]], Pr*PcRN74}]],
+    {Pr, PrArr75}],
+  Nothing];
+
+fig75 = Show[
+  ListContourPlot[
+    Flatten[
+      Table[
+        {Tgrid75[[i]], Pgrid75[[j]],
+         If[NumericQ[RsMesh75[[j, i]]], RsMesh75[[j, i]], Missing[]]},
+        {j, Length[Pgrid75]}, {i, Length[Tgrid75]}],
+      1],
+    Contours           -> 60,
+    ContourLines       -> False,
+    InterpolationOrder -> 1,
+    ColorFunction      -> ColorData["TemperatureMap"],
+    Method             -> {"TransparentPolygonMesh" -> True},
+    PlotLegends        -> BarLegend[Automatic, 
+                            LegendLabel -> RsLab[13],
+                            LegendMarkerSize -> 500,
+                            LabelStyle -> Directive[FontFamily -> "Times New Roman", 12]],
+    Frame              -> True,
+    FrameLabel         -> {
+      Row[{mTx["Temp\[EAcute]rature ", 14], mIt["T", 14]}],
+      Row[{mTx["Pression ", 14], mIt["P", 14]}]}
+  ],
+  ListLinePlot[coexPts75, PlotStyle -> Directive[Black, Thickness[0.004]]],
+  Graphics[{
+    EdgeForm[Directive[Black, Thickness[0.0010]]], FaceForm[Red],
+    Disk[{TcRN74, PcRN74}, Scaled[{0.010, 0.010}]],
+    Black,
+    Text[Style[Row[{"(", TcLab[11], ", ", PcLab[11], ")"}], Black], 
+         {TcRN74 + 0.002, PcRN74 + 0.0002}],
+    Text[Style[mTx["Coexistence", 11], White], 
+         {0.030, 0.0012}, {0, 0}, {1, 1.8}],
+    Text[Style[mTx["Phase PTN", 14], White], 
+         {0.017, 0.0027}],
+    Text[Style[mTx["Phase GTN", 14], Black], 
+         {0.055, 0.0015}],
+    Text[Style[mTx["Phase supercritique", 14], White], 
+         {0.050, 0.0048}]
+  }],
+  PlotRange -> {{0.005, 0.080}, {0.0005, 0.006}},
+  PlotRangeClipping -> True,
+  PlotLabel ->
+    Row[{mTx["Diagramme (", 13], mIt["P", 13], ",", mIt["T", 13], 
+         mTx[") RN-AdS (", 13], mIt["Q", 13], mTx[" = 1) avec carte de ", 13], 
+         RsLab[13]}],
+  ImageSize -> 750
+];
+
+saveFig[fig75, "fig5_PT_Rs_colormap"];
+
+
+(* ::Section::Closed:: *)
+(*8. Figure 6 \[LongDash] Taux d emission energetique d^2E/(dw dt) en D=4*)
+
+
+(* Section efficace d'absorption dans l'approximation geometrique : sigma_lim = pi R_s^2 *)
+emissionRate[omega_, TH_, Rsv_] := 
+  2 Pi^2 (Pi Rsv^2) omega^3 / (Exp[omega/TH] - 1);
+
+omegaArr = Subdivide[0.005, 0.5, 1000];
+
+(* Cas (a) : Schwarzschild plat, M=1 *)
+casA76 = {1/(8 Pi M0), Sqrt[27] M0};
+(* Cas (b) : Schwarzschild-AdS, r_h=2, ell=10 *)
+TbVal76 = TSchAdS[2.0, 10.0]; MbVal76 = MSchAdS[2.0, 10.0];
+casB76  = {TbVal76, RsSchAdS[MbVal76, 10.0]};
+(* Cas (c) : RN-AdS, r_h=2, Q=0.5, P=0.5 P_c *)
+QV76    = 0.5; PcQ05 = 1/(96 Pi QV76^2);
+Pb76    = 0.5 PcQ05;
+TcVal76 = (1/(4 Pi 2.0))(1 - QV76^2/2.0^2 + 8 Pi Pb76 2.0^2);
+McVal76 = (2.0/2)(1 + QV76^2/2.0^2 + (8 Pi Pb76/3) 2.0^2);
+casC76  = {TcVal76, (3 McVal76 + Sqrt[9 McVal76^2 - 8 QV76^2])/2 / 
+                     Sqrt[1 - 2 McVal76/((3 McVal76 + Sqrt[9 McVal76^2 - 8 QV76^2])/2) + 
+                          QV76^2/((3 McVal76 + Sqrt[9 McVal76^2 - 8 QV76^2])/2)^2 + 
+                          (8 Pi Pb76/3) ((3 McVal76 + Sqrt[9 McVal76^2 - 8 QV76^2])/2)^2]};
+
+data76 = Table[
+  Table[{om, emissionRate[om, params[[1]], params[[2]]]}, 
+        {om, 0.005, 0.5, 0.002}],
+  {params, {casA76, casB76, casC76}}];
+
+xLab76 = Row[{mTx["Fr\[EAcute]quence ", 14], Style["\[Omega]", FontFamily -> "Times New Roman", Italic, 14, Black]}];
+yLab76 = Row[{Superscript[mIt["d", 14], mTx["2", 11]], " ", mIt["E", 14], " / (", mIt["d", 14], 
+              Style["\[Omega]", FontFamily -> "Times New Roman", Italic, 14, Black], " ", mIt["d", 14], mIt["t", 14], ")"}];
+
+titleLab76 = Column[{
+   Row[{mTx["Taux d'\[EAcute]mission (D=4), ", 13], 
+         Subscript[Style["\[Sigma]", Italic, 13, FontFamily -> "Times New Roman"], mTx["lim", 10]], 
+         mTx[" = \[Pi] ", 13], Superscript[RsLab[13], mTx["2", 10]]}],
+   Style[mTx["(Spectre local dans l'approximation de corps noir)", 11], Italic]}, Center];
+
+legSchPlat = Row[{mTx["Schwarzschild plat (", 11], mIt["M", 11], mTx[" = 1)", 11]}];
+legSchAdS  = Row[{mTx["Schwarzschild-AdS (", 11], rpLab[11], mTx[" = 2, ", 11], 
+                  Style["\[ScriptL]", Italic, 11, FontFamily -> "Times New Roman"], mTx[" = 10)", 11]}];
+legRNAdS   = Row[{mTx["RN-AdS (", 11], rpLab[11], mTx[" = 2, ", 11], 
+                  mIt["Q", 11], mTx[" = 0.5, ", 11], 
+                  mIt["P", 11], mTx[" = 0.5 ", 11], PcLab[11], ")"}];
+
+fig76 = ListLinePlot[data76,
+  PlotStyle -> {Directive[cF[1], Thickness[0.0035]],
+                Directive[cF[2], Thickness[0.0035]],
+                Directive[cF[3], Thickness[0.0035]]},
+  PlotRange -> {{0, 0.5}, {0, 0.32}},
+  FrameLabel -> {xLab76, yLab76},
+  PlotLabel  -> titleLab76,
+  PlotLegends -> Placed[{legSchPlat, legSchAdS, legRNAdS}, {0.80, 0.88}],
+  GridLines -> None, ImageSize -> 720];
+
+saveFig[fig76, "fig6_emission_rate"];
+
+
+(* ::Section::Closed:: *)
+(*9. Tableau recapitulatif*)
+
+
+tabHeader76 = {
+  Style["Figure",               Bold, FontFamily -> "Times New Roman", 11],
+  Style["Quantite",             Bold, FontFamily -> "Times New Roman", 11],
+  Style["Parametres",           Bold, FontFamily -> "Times New Roman", 11],
+  Style["Resultats numeriques", Bold, FontFamily -> "Times New Roman", 11],
+  Style["Signature physique",   Bold, FontFamily -> "Times New Roman", 11]};
+tabCell76[s_] := Style[s, FontFamily -> "Times New Roman", 10, Black];
+tabRows76 = {
+  {tabCell76["1"], tabCell76[Row[{VeffLab[10], " photon"}]],
+   tabCell76[Row[{"Schwarzschild plat D=4, ", mIt["L", 10], " = 1\[Ellipsis]5"}]],
+   tabCell76[Row[{rpsLab[10], " = 3", mIt["M", 10], " (indep. de ", mIt["L", 10], ")\n",
+                  Subscript[mIt["V", 10], mTx["max", 9]], 
+                  " = ", Superscript[mIt["L", 10], mTx["2", 9]], "/(27 ", Superscript[mIt["M", 10], mTx["2", 9]], ")"}]],
+   tabCell76["Maximum unique"]},
+
+  {tabCell76["2"], tabCell76["Ombre circulaire"],
+   tabCell76[Row[{"Schwarzschild D=4, ", mIt["M", 10], " variable"}]],
+   tabCell76[Row[{Superscript[Style["\[Alpha]", Italic, 10, FontFamily -> "Times"], mTx["2", 9]], " + ", 
+                  Superscript[Style["\[Beta]", Italic, 10, FontFamily -> "Times"], mTx["2", 9]], " = 27 ", 
+                  Superscript[mIt["M", 10], mTx["2", 9]], "\n", 
+                  RsLab[10], " = \[Sqrt]27 ", mIt["M", 10]}]],
+   tabCell76["Cercles concentriques"]},
+
+  {tabCell76["3"], tabCell76[Row[{RsLab[10], " Hawking-Page"}]],
+   tabCell76[Row[{"Schwarzschild-AdS, ", Style["\[ScriptL]", Italic, 10, FontFamily -> "Times"], " = 10"}]],
+   tabCell76[Row[{THPLab[10], " = 1/(\[Pi]\[ScriptL]) = ", ToString[NumberForm[N[1/(Pi 10), 5], 5]], "\n",
+                  RsLab[10], "/\[ScriptL] = ", ToString[NumberForm[N[3 Sqrt[3/28], 5], 5]]}]],
+   tabCell76["Bifurcation thermodynamique"]},
+
+  {tabCell76["4"], tabCell76[Row[{RsLab[10], "(", mIt["T", 10], ") RN-AdS"}]],
+   tabCell76[Row[{mIt["Q", 10], " = 1, ", Subscript[mIt["P", 10], mTx["r", 9]], " \[Element] {0.6, 1.0, 1.5}"}]],
+   tabCell76[Row[{TcLab[10], " = ", ToString[NumberForm[N[TcRN74, 5], 5]], "\n", 
+                  Style["\[CapitalDelta]", Italic, 10, FontFamily -> "Times"], RsLab[10], " (", Subscript[mIt["P", 10], mTx["r", 9]], " = 0.6) = ",
+                  If[maxwell74 =!= $Failed, ToString[NumberForm[N[RsGTN74 - RsPTN74, 5], 5]], "n/a"]}]],
+   tabCell76["Signature VdW PTN/GTN"]},
+
+  {tabCell76["5"], tabCell76[Row[{"Carte (", mIt["P", 10], ",", mIt["T", 10], ") \[Rule] ", RsLab[10]}]],
+   tabCell76[Row[{"RN-AdS, ", mIt["Q", 10], " = 1"}]],
+   tabCell76[Row[{TcLab[10], " = ", ToString[NumberForm[N[TcRN74, 5], 5]], "\n",
+                  PcLab[10], " = ", ToString[NumberForm[N[PcRN74, 4], 4]]}]],
+   tabCell76["Cartographie thermo-optique"]},
+
+  {tabCell76["6"], tabCell76["Emission energie"],
+   tabCell76["D=4, 3 cas pedagogiques"],
+   tabCell76[Row[{"Cas (a) : ", Subscript[mIt["T", 10], mTx["H", 9]], " = ", ToString[NumberForm[N[casA76[[1]], 4], 4]], "\n",
+                  "Cas (b) : ", Subscript[mIt["T", 10], mTx["H", 9]], " = ", ToString[NumberForm[N[casB76[[1]], 4], 4]], "\n",
+                  "Cas (c) : ", Subscript[mIt["T", 10], mTx["H", 9]], " = ", ToString[NumberForm[N[casC76[[1]], 4], 4]]}]],
+   tabCell76["Hawking radiation D=4"]}
+};
+
+tabSynthese76 = Grid[
+  Prepend[tabRows76, tabHeader76],
+  Frame      -> All,
+  Background -> {None, {{LightGray, None}, None}},
+  Alignment  -> {Left, Center},
+  Spacings   -> {1.5, 1},
+  Dividers   -> {All, {2 -> Black, All}},
+  FrameStyle -> Directive[Black, Thickness[0.7]],
+  ItemSize   -> {{6, 14, 16, 22, 18}}];
+
+Print["\n--- Tableau recapitulatif (Figures 1 a 6) ---\n"];
+Print[tabSynthese76];
+
+Print["\nFigures exportees dans : ", outDir];
+

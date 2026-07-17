@@ -1,0 +1,894 @@
+(* ::Package:: *)
+
+(* ::Title:: *)
+(*Reproduction 1 \[LongDash] Orbites des photons au voisinage des trous noirs*)
+
+
+(* ::Subtitle:: *)
+(*Section 6.2 du chapitre 6 (these reference) \[LongDash] Figures 6.4, 6.5, 6.6, 6.7 et r_ISCO*)
+(*Stage S4 \[LongDash] LPHEAG, Universite Cadi Ayyad, Marrakech*)
+(*Auteur : Hamza Alioua | Encadrant : Dr. S. Iraoui | Mai 2026*)
+
+
+(* ::Section::Closed:: *)
+(*0. Initialization*)
+
+
+ClearAll["Global`*"];
+$Assumptions = {r > 0, rp > 0, M > 0, Lv > 0, Ev > 0, Qv > 0, Pv > 0,
+                phi \[Element] Reals, u > 0, \[Epsilon] >= 0};
+
+outDir = FileNameJoin[{NotebookDirectory[], "figures_orbites_Ma"}];
+If[!DirectoryQ[outDir], CreateDirectory[outDir]];
+
+SetOptions[Plot,
+  Frame -> True, FrameStyle -> Directive[Black, 14],
+  LabelStyle -> Directive[FontFamily -> "Times New Roman", 14],
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> Thick, ImageSize -> 500, Background -> White];
+
+SetOptions[ListLinePlot,
+  Frame -> True, FrameStyle -> Directive[Black, 14],
+  LabelStyle -> Directive[FontFamily -> "Times New Roman", 14],
+  GridLines -> Automatic,
+  GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+  PlotStyle -> Thick, ImageSize -> 700, Background -> White];
+
+hexToRGB[h_String] := RGBColor @@ (IntegerDigits[
+  FromDigits[StringTake[h, {2, -1}], 16], 256, 3] / 255.);
+
+colPalette = {"#2166AC", "#D6604D", "#4DAF4A", "#FF7F00",
+              "#984EA3", "#A65628", "#E41A1C", "#377EB8"};
+cF[i_]   := hexToRGB[colPalette[[i]]];
+orbitCol = RGBColor[139/255, 69/255, 19/255];
+
+mathIt[s_, sz_:11] := Style[s, FontFamily -> "Times New Roman",
+                            Italic, FontWeight -> "Plain", sz, Black];
+mathPl[s_, sz_:11] := Style[s, FontFamily -> "Times New Roman",
+                            FontWeight -> "Plain", sz, Black];
+
+saveFig[gr_, name_] := Module[{p1, p2},
+  p1 = FileNameJoin[{outDir, name <> ".pdf"}];
+  p2 = FileNameJoin[{outDir, name <> ".png"}];
+  Export[p1, gr, "PDF", ImageResolution -> 300];
+  Export[p2, gr, "PNG", ImageResolution -> 300];
+  Print["  [OK] " <> name]];
+
+M0 = 1.0;
+
+
+(* ::Section::Closed:: *)
+(*1. Derivations symboliques*)
+
+
+(* ::Subsection::Closed:: *)
+(*1.1  Potentiel effectif Schwarzschild*)
+
+
+(* f(r) = 1 - 2M/r ;  Veff = f(r)(\[Epsilon] + L^2/r^2)  [Eq. 6.35] *)
+fSchw[r_]                  := 1 - 2 M/r;
+VeffSym[r_, \[Epsilon]_, L_] := fSchw[r] (\[Epsilon] + L^2/r^2);
+
+Print["Veff massif (\[Epsilon]=1) = ", VeffSym[r, 1, L] // FullSimplify];
+Print["Veff photon (\[Epsilon]=0) = ", VeffSym[r, 0, L] // FullSimplify];
+
+
+(* ::Subsection::Closed:: *)
+(*1.2  Extrema de Veff*)
+
+
+(* \[Epsilon]=1 : r\[PlusMinus] = L^2/(2M)(1\[PlusMinus]\[Sqrt](1-12M^2/L^2)) ;  \[Epsilon]=0 : r_ps = 3M *)
+dVeffDr       = D[VeffSym[r, \[Epsilon], L], r] // Simplify;
+extremaMassif = Solve[(dVeffDr /. \[Epsilon] -> 1) == 0, r] // FullSimplify;
+extremaPhoton = Solve[(dVeffDr /. \[Epsilon] -> 0) == 0, r] // FullSimplify;
+
+Print["r\[PlusMinus] (massif) : ", r /. extremaMassif];
+Print["r_ps (photon)         : ", r /. extremaPhoton];
+
+
+(* ::Subsection::Closed:: *)
+(*1.3  Equation de Binet*)
+
+
+(* (du/d\[CurlyPhi])^2 = E^2/L^2 - \[Epsilon]/L^2 + 2M\[Epsilon]/L^2 u - u^2 + 2Mu^3  [Eq. 6.34] *)
+firstIntegral = E^2/L^2 - \[Epsilon]/L^2 + 2 M \[Epsilon]/L^2 u - u^2 + 2 M u^3;
+bineteq       = D[firstIntegral, u]/2 // FullSimplify;
+
+Print["(du/d\[CurlyPhi])\.b2 = ", firstIntegral];
+Print["d\.b2u/d\[CurlyPhi]\.b2 = ", bineteq];
+
+
+(* ::Subsection::Closed:: *)
+(*1.4  Orbite circulaire instable des photons*)
+
+
+(* r_ps = 3M,  \[Xi]_c = L/E|_c = \[Sqrt]27 M  [Eq. 6.45] *)
+firstIntPh[\[Xi]_, u_] := 1/\[Xi]^2 - u^2 + 2 M u^3;
+solCircPh = Solve[{firstIntPh[\[Xi], u0] == 0,
+                   D[firstIntPh[\[Xi], u0], u0] == 0}, {u0, \[Xi]}] // FullSimplify;
+
+xiCrit = Sqrt[27] M;
+Print["r_ps = 3M,  \[Xi]_c = \[Sqrt]27 M = ", N[xiCrit, 6]];
+
+
+(* ::Subsection::Closed:: *)
+(*1.5  Sphere photonique RN-AdS*)
+
+
+(* r_0 = (3M + \[Sqrt](9M^2-8Q^2))/2  [Eq. 6.47]  (independant de \[CapitalLambda]) *)
+fRNAdS[r_, Mv_, Qv_, lv_] := 1 - 2 Mv/r + Qv^2/r^2 + r^2/lv^2;
+condPS  = (2 fRNAdS[r0, M, Q, l] - r0 D[fRNAdS[r0, M, Q, l], r0]) // FullSimplify;
+solPS   = Solve[condPS == 0, r0] // FullSimplify;
+r0Form  = (3 M + Sqrt[9 M^2 - 8 Q^2])/2;
+
+Print["r\:2080 = (3M + \[Sqrt](9M\.b2-8Q\.b2))/2  (independant de \[CapitalLambda])"];
+
+
+(* ::Subsection::Closed:: *)
+(*1.6  Point critique RN-AdS (Q=1)*)
+
+
+(* r_{+c} = \[Sqrt]6,  P_c = 1/(96\[Pi]),  T_c = \[Sqrt]6/(18\[Pi])
+   Determines par dT/dr_+ = 0 et d^2T/dr_+^2 = 0 *)
+TRNSym[rp_, P_, Qv_] := 1/(4 Pi rp) (1 - Qv^2/rp^2 + 8 Pi P rp^2);
+critSys = Solve[{D[TRNSym[rp, P, Qv], rp] == 0,
+                 D[TRNSym[rp, P, Qv], {rp, 2}] == 0}, {rp, P}] // FullSimplify;
+
+rcRN = Sqrt[6]; PcRN = 1/(96 Pi); TcRN = Sqrt[6]/(18 Pi);
+McCrit = (rcRN/2 + 1/(2 rcRN) + 4 Pi/3 PcRN rcRN^3) // N;   (* M_c = 2\[Sqrt]6/3 *)
+r0cVal = (3 McCrit + Sqrt[9 McCrit^2 - 8])/2 // N;           (* r_{0c} = \[Sqrt]6+2 *)
+
+Print["r_{+c} = \[Sqrt]6, P_c = 1/(96\[Pi]), T_c = \[Sqrt]6/(18\[Pi])"];
+Print["M_c = 2\[Sqrt]6/3 = ", McCrit, ",  r\:2080c = \[Sqrt]6+2 = ", r0cVal];
+
+
+(* ::Section::Closed:: *)
+(*2. Figure 6.4 \[LongDash] Potentiel effectif*)
+
+
+LMass = 4.2 M0; LPhot = 4.35 M0;
+VeffMNum[r_, Lv_] := (1 - 2 M0/r)(1 + Lv^2/r^2);   (* \[Epsilon]=1, massif *)
+VeffPNum[r_, Lv_] := (1 - 2 M0/r)(Lv^2/r^2);         (* \[Epsilon]=0, photon *)
+
+(* Extrema analytiques : r_- = Ci (max), r_+ = Cs (min) *)
+disc   = 1 - 12 M0^2/LMass^2;
+rInner = (LMass^2/(2 M0))(1 - Sqrt[disc]);
+rOuter = (LMass^2/(2 M0))(1 + Sqrt[disc]);
+VInner = VeffMNum[rInner, LMass];
+VOuter = VeffMNum[rOuter, LMass];
+rPhot  = 3 M0;
+VPhMax = VeffPNum[rPhot, LPhot];
+
+E2A = VOuter + 0.30 (1.0 - VOuter);
+E2B = 1 + 0.45 (VInner - 1);
+E2C = VInner;
+E2D = VInner + 0.025;
+
+turnsA    = NSolve[VeffMNum[r, LMass] == E2A && r > 2 M0, r, Reals];
+turnsAval = Sort[r /. turnsA];
+riPhys    = If[Length[turnsAval] >= 3, turnsAval[[2]], turnsAval[[1]]];
+rmPhys    = If[Length[turnsAval] >= 3, turnsAval[[3]], turnsAval[[2]]];
+
+E2pB = 0.60 VPhMax;
+E2pC = VPhMax;
+E2pD = 1.20 VPhMax;
+
+Print["Massif : r_- = ", N[rInner, 5], " M, r_+ = ", N[rOuter, 5], " M"];
+Print["V(Ci) = ", N[VInner, 5], ", V(Cs) = ", N[VOuter, 5]];
+Print["Photon : VPhMax = ", N[VPhMax, 5], " a r/(2M) = 1.5"];
+
+ciLabel = mathIt[Subscript["C", "i"], 13];
+csLabel = mathIt[Subscript["C", "s"], 13];
+riLabel = mathIt[Subscript["r", "i"], 11];
+rmLabel = mathIt[Subscript["r", "m"], 11];
+
+lxMax = Log[500] + 0.3;
+
+(*Panneau gauche : particule massive (\[Epsilon]=1) *)
+fig64L = Show[
+  LogLinearPlot[VeffMNum[2 M0 x, LMass], {x, 1.005, 500},
+    PlotStyle  -> Directive[cF[2], Thickness[0.005]],
+    PlotRange  -> {{1, 500}, {0.86, 1.10}},
+    PlotRangeClipping -> True,
+    ImagePadding -> {{55, 25}, {45, 35}},
+    PlotLabel  -> mathPl["(a) Particule massive (\[Epsilon]=1),  L = 4.2 M", 13],
+    Frame -> True,
+    FrameLabel -> {{mathIt[Subscript["V", "eff"], 14], None},
+                   {mathPl["r/2M", 14], None}},
+    GridLines  -> None,
+    FrameTicks -> {
+      {Automatic, Automatic},
+      {{{2,   "2",   {0.012, 0}},
+       {5,   "5",   {0.007, 0}},
+       {10,  "10",  {0.012, 0}},
+       {50,  "50",  {0.007, 0}},
+       {100, "100", {0.012, 0}},
+       {200, "",    {0.007, 0}},
+       {500, "500", {0.007, 0}}},
+      Automatic}}],
+  Graphics[{
+    Black, Thickness[0.006], Line[{{0, 0.855}, {0, 1.106}}],
+    cF[1], Thickness[0.0025],
+    Line[{{Log[riPhys/(2 M0)], E2A}, {Log[rmPhys/(2 M0)], E2A}}],
+    Line[{{0, E2B}, {lxMax, E2B}}],
+    Line[{{0, E2C}, {lxMax, E2C}}],
+    Line[{{0, E2D}, {lxMax, E2D}}],
+    GrayLevel[0.5], Dashing[0.01], Thickness[0.001],
+    Line[{{0, 1.0}, {lxMax, 1.0}}],
+    Black,
+    Text[mathIt["A", 12], {Log[rmPhys/(2 M0)] - 0.80, E2A + 0.008}],
+    Text[mathIt["B", 12], {Log[60], E2B + 0.008}],
+    Text[mathIt["C", 12], {Log[60], E2C + 0.008}],
+    Text[mathIt["D", 12], {Log[60], E2D + 0.008}],
+    PointSize[0.015],
+    Point[{Log[rInner/(2 M0)], VInner}],
+    Point[{Log[rOuter/(2 M0)], VOuter}],
+    Text[ciLabel, {Log[rInner/(2 M0)] - 0.22, VInner + 0.013}],
+    Text[csLabel, {Log[rOuter/(2 M0)] + 0.05, VOuter - 0.012}],
+    Black, Dashing[0.007], Thickness[0.0015],
+    Line[{{Log[riPhys/(2 M0)], 0.866}, {Log[riPhys/(2 M0)], E2A}}],
+    Line[{{Log[rmPhys/(2 M0)], 0.866}, {Log[rmPhys/(2 M0)], E2A}}],
+    Text[riLabel, {Log[riPhys/(2 M0)] - 0.10, 0.872}],
+    Text[rmLabel, {Log[rmPhys/(2 M0)] + 0.10, 0.872}]}],
+  ImageSize -> 520];
+
+(*Panneau droit : particule sans masse (\[Epsilon]=0) *)
+fig64R = Show[
+  Plot[VeffPNum[2 M0 x, LPhot], {x, 1.005, 10},
+    PlotStyle  -> Directive[cF[2], Thickness[0.005]],
+    PlotRange  -> {{1, 10}, {0, 1.0}},
+    PlotRangeClipping -> True,
+    Frame -> True,
+    PlotLabel  -> mathPl["(b) Particule sans masse (\[Epsilon]=0),  L = 4.35 M", 13],
+    GridLines  -> None],
+  Graphics[{
+    Black, Thickness[0.006], Line[{{1, -0.02}, {1, 1.02}}],
+    cF[1], Thickness[0.0025],
+    Line[{{0.8, E2pB}, {10.2, E2pB}}],
+    Line[{{0.8, E2pC}, {10.2, E2pC}}],
+    Line[{{0.8, E2pD}, {10.2, E2pD}}],
+    Black,
+    Text[mathIt["B", 12], {7.5, E2pB + 0.030}],
+    Text[mathIt["C", 12], {7.5, E2pC + 0.030}],
+    Text[mathIt["D", 12], {7.5, E2pD + 0.030}],
+    PointSize[0.015], Point[{rPhot/(2 M0), VPhMax}],
+    Text[mathIt[Subscript["C", "i"], 13],
+         {rPhot/(2 M0) + 0.20, VPhMax + 0.040}]}],
+  FrameLabel -> {{mathIt[Subscript["V", "eff"], 14], None},
+                 {mathPl["r/2M", 14], None}},
+  ImageSize -> 520];
+
+fig64 = GraphicsRow[{fig64L, fig64R}, ImageSize -> 1100, Spacings -> 50];
+saveFig[fig64, "fig64_potentiel_effectif"];
+
+
+(* ::Section::Closed:: *)
+(*3. Figure 6.5 \[LongDash] Orbite d'une particule massive*)
+
+
+(* a = 55M, e = 0.8 ; equation de Binet [Eq. 6.39] : d^2u/d\[CurlyPhi]^2 + u - M/L^2 - 3Mu^2 = 0
+   CI : u(0) = M/(a(1-e)), u'(0) = 0  [Eq. 6.41] ; avancee du perihelie [Eq. 6.42] *)
+aOrb         = 55 M0;
+eOrb         = 0.8;
+MoverL2      = M0/(aOrb (1 - eOrb^2));
+u0Orb        = M0/(aOrb (1 - eOrb));
+DeltaPhiTheo = 3 Pi (2 M0)/(aOrb (1 - eOrb^2));
+
+Print["a = ", aOrb, "M, e = ", eOrb,
+      ",  \[CapitalDelta]\[CurlyPhi]_theo = ", N[DeltaPhiTheo, 6], " rad/orbite"];
+Print["Periapside r_per = ", N[aOrb(1-eOrb), 4], "M = ", N[aOrb (1-eOrb)/(2M0), 4], " r/2M"];
+Print["Apoapse r_apo = ", N[aOrb(1+eOrb), 4], "M = ", N[aOrb (1+eOrb)/(2M0), 4], " r/2M"];
+
+phiMax65 = 30 (2 Pi);
+solOrbite = NDSolve[{
+    u''[phi] + u[phi] - MoverL2 - 3 M0 u[phi]^2 == 0,
+    u[0] == u0Orb, u'[0] == 0},
+  u, {phi, 0, phiMax65},
+  Method        -> {"ExplicitRungeKutta", "DifferenceOrder" -> 8},
+  AccuracyGoal  -> 12, PrecisionGoal -> 10, MaxSteps -> 1000000];
+
+uFn65    = u /. First[solOrbite];
+phiTab65 = Subdivide[0, phiMax65, 60000];
+(* Coordonnees en r/M ; horizon a r/M = 2 *)
+xyTab65  = Table[
+  With[{rv = 1/uFn65[ph]}, {(rv Cos[ph])/M0, (rv Sin[ph])/M0}],
+  {ph, phiTab65}];
+
+Print["r_min = ", N[1/Max[uFn65 /@ phiTab65], 4], "M,  r_max = ",
+      N[1/Min[uFn65 /@ phiTab65], 4], "M"];
+
+makePanel65[nRev_, label_] := Module[{nMax, pts, bh, axes, extraAnnot},
+  nMax = Round[60000 nRev/30];
+  pts  = Take[xyTab65, nMax];
+
+  bh = {Black, Disk[{0, 0}, 2.0]};   (* horizon r=2M en coordonnees r/M *)
+
+  axes = {GrayLevel[0.3], Thickness[0.002],
+          Line[{{-30, 0}, {30, 0}}], Line[{{0, -30}, {0, 30}}]};
+
+  (* Panneau "T" : annotation r/2M et angle \[CurlyPhi] *)
+  extraAnnot = If[label == "T",
+    With[{angle = Pi/4, rv = 14.0, rArc = 3.5},
+      {Black, Thickness[0.0010],
+       Line[{{0, 0}, {rv Cos[angle], rv Sin[angle]}}],
+       Thickness[0.0015],
+       Circle[{0, 0}, rArc, {0, angle}],
+       Polygon[{{rArc Cos[angle], rArc Sin[angle]},
+                {(rArc - 0.35) Cos[angle - 0.12],
+                 (rArc - 0.35) Sin[angle - 0.12]},
+                {(rArc - 0.10) Cos[angle - 0.18],
+                 (rArc - 0.10) Sin[angle - 0.18]}}],
+       Text[mathIt[Row[{"\!\(\*FractionBox[\(r\),\(2 M\)]\)"}], 12],
+            {7.0, 9.5}],
+       Text[mathIt["\[CurlyPhi]", 13], {4.6, 1.2}],
+       orbitCol, PointSize[0.012],
+       Point[{rv Cos[angle], rv Sin[angle]}]}],
+    {}];
+
+  Show[
+    Graphics[{
+      axes, orbitCol, Thickness[0.0025], Line[pts], bh, extraAnnot,
+      Black, Text[mathIt["Trou noir", 9], {0, -3.6}],
+      Text[mathIt[label, 14], {24, 27}]}],
+    PlotRange      -> {{-30, 30}, {-30, 30}},
+    PlotRangeClipping -> True,
+    AspectRatio    -> 1, Frame -> True, FrameStyle -> Directive[Black, 12],
+    GridLines      -> {{-20, -10, 0, 10, 20, 30}, {-20, -10, 0, 10, 20, 30}},
+    GridLinesStyle -> Directive[GrayLevel[0.85], Dashed],
+    ImageSize      -> 380]];
+
+panelT65   = makePanel65[1,  "T"];
+panel2T65  = makePanel65[2,  "2T"];
+panel8T65  = makePanel65[8,  "8T"];
+panel30T65 = makePanel65[30, "30T"];
+
+fig65 = GraphicsGrid[{{panelT65, panel2T65}, {panel8T65, panel30T65}},
+                     ImageSize -> 850, Spacings -> 30];
+saveFig[fig65, "fig65_orbite_massive"];
+
+
+(* ::Section::Closed:: *)
+(*4. Figure 6.6 \[LongDash] Orbites des photons (trois regimes)*)
+
+
+(* Equation de Binet pour photons [Eq. 6.43] :
+   (du/d\[CurlyPhi])^2 = 1/\[Xi]^2 - u^2 + 2Mu^3
+   (a) \[Xi] > \[Xi]_c : E^2 < Vmax -> retour parabolique
+   (b) \[Xi] = \[Xi]_c : E^2 = Vmax -> spirale vers r_ps = 3M
+   (c) \[Xi] < \[Xi]_c : E^2 > Vmax -> capture *)
+
+xiC = Sqrt[27] M0;
+Print["\[Xi]_c = \[Sqrt]27 M = ", N[xiC, 6]];
+
+(* Plongement cartesien : (X,Y) = r(\[CurlyPhi])/(2M) * (cos(\[Alpha]+\[CurlyPhi]), sin(\[Alpha]+\[CurlyPhi]))
+   \[Alpha] = orientation initiale dans le repere de la figure *)
+
+
+(* ::Subsection::Closed:: *)
+(*Cas (a) : retour parabolique \[LongDash] \[Xi] > \[Xi]_c*)
+
+
+xiPar   = 1.30 xiC;
+
+(* Point de retournement : zero de 1/\[Xi]^2 - u^2 + 2Mu^3 *)
+uPerPar = u /. FindRoot[1/xiPar^2 - u^2 + 2 M0 u^3 == 0,
+                        {u, 0.24, 0.001, 0.32}];
+uStop   = 5*^-4;
+
+solParaFwd = NDSolve[{
+    u''[phi] + u[phi] - 3 M0 u[phi]^2 == 0,
+    u[0] == uPerPar, u'[0] == 0,
+    WhenEvent[u[phi] <= uStop, "StopIntegration"]},
+  u, {phi, 0, 15},
+  AccuracyGoal -> 13, PrecisionGoal -> 11, MaxSteps -> 600000];
+
+uFnPar    = u /. First[solParaFwd];
+phiAsy    = (u["Domain"] /. First[solParaFwd])[[1, 2]];
+nParPts   = 3000;
+phiPosArr = Subdivide[0, phiAsy, nParPts];
+
+Print["phi_asy = ", N[phiAsy, 6], " rad (", N[phiAsy 180/Pi, 4], " deg)"];
+Print["Deflexion 2*phi_asy - pi = ", N[2 phiAsy - Pi, 5], " rad"];
+
+alphaA = -123.0 Degree;
+
+Print["alphaA = -123 deg | Dir forward = ", N[(alphaA/Degree + phiAsy 180/Pi), 4],
+      " deg | Entree par bord droit x=5 \[Checkmark]"];
+
+xyParRaw = Join[
+  Table[
+    With[{rv = Min[1/uFnPar[ph], 50 M0]},
+      {(rv Cos[alphaA + (-ph)])/(2 M0),
+       (rv Sin[alphaA + (-ph)])/(2 M0)}],
+    {ph, Reverse[phiPosArr]}],
+  Table[
+    With[{rv = Min[1/uFnPar[ph], 50 M0]},
+      {(rv Cos[alphaA + ph])/(2 M0),
+       (rv Sin[alphaA + ph])/(2 M0)}],
+    {ph, Rest[phiPosArr]}]];
+
+xyPar = Reverse[xyParRaw];
+
+Print["(a) \[Xi] = ", N[xiPar/xiC, 5], " \[Xi]_c,  r_per = ",
+      N[1/uPerPar, 4], "M,  \[CurlyPhi]_asy = ", N[phiAsy, 5], " rad,  \[CapitalDelta]\[CurlyPhi] = ",
+      N[2 phiAsy - Pi, 4], " rad"];
+
+
+(* ::Subsection::Closed:: *)
+(*Cas (b) : orbite circulaire instable \[LongDash] \[Xi] = \[Xi]_c*)
+
+
+(* r_0 = 7M ; CI avec u'(0) = \[Sqrt](1/\[Xi]_c^2 - u_0^2 + 2Mu_0^3) ; spirale asymptotique vers r_ps = 3M *)
+r0B     = 7 M0;
+uStartB = 1/r0B;
+wStartB = Sqrt[1/xiC^2 - uStartB^2 + 2 M0 uStartB^3];
+alphaB  = ArcTan[2.2, 2.5];  (* position initiale dans le frame *)
+
+solCirc = NDSolve[{
+    u''[phi] + u[phi] - 3 M0 u[phi]^2 == 0,
+    u[0] == uStartB, u'[0] == wStartB,
+    WhenEvent[u[phi] > 1.02/(3 M0), "StopIntegration"]},
+  u, {phi, 0, 6 Pi},
+  AccuracyGoal -> 14, PrecisionGoal -> 12, MaxSteps -> 800000];
+
+uFnB    = u /. First[solCirc];
+phiMaxB = (u["Domain"] /. First[solCirc])[[1, 2]];
+
+xyCirc = Table[
+  With[{rv = 1/uFnB[ph]},
+    {(rv Cos[alphaB + ph])/(2 M0),
+     (rv Sin[alphaB + ph])/(2 M0)}],
+  {ph, Subdivide[0, phiMaxB, 8000]}];
+
+Print["(b) r_0 = ", N[r0B, 3], "M (r/2M = ", N[r0B/(2M0), 3],
+      "),  \[CurlyPhi]_max = ", N[phiMaxB/Pi, 3], "\[Pi]"];
+
+
+(* ::Subsection::Closed:: *)
+(*Cas (c) : capture gravitationnelle \[LongDash] \[Xi] < \[Xi]_c*)
+
+
+(* r_0 = 7M, E^2 > Vmax : le photon franchit le maximum du potentiel et tombe dans le trou noir *)
+xiCapt  = 0.85 xiC;
+r0C     = 7 M0;
+uStartC = 1/r0C;
+wStartC = Sqrt[1/xiCapt^2 - uStartC^2 + 2 M0 uStartC^3];
+alphaC  = Pi/4;   (* 45 deg : photon en haut a droite *)
+
+solCapt = NDSolve[{
+    u''[phi] + u[phi] - 3 M0 u[phi]^2 == 0,
+    u[0] == uStartC, u'[0] == wStartC,
+    WhenEvent[u[phi] >= 1/(1.01 (2 M0)), "StopIntegration"]},
+  u, {phi, 0, 8},
+  AccuracyGoal -> 12, PrecisionGoal -> 10, MaxSteps -> 200000];
+
+uFnC    = u /. First[solCapt];
+phiMaxC = (u["Domain"] /. First[solCapt])[[1, 2]];
+
+xyCapt = Table[
+  With[{rv = 1/uFnC[ph]},
+    {(rv Cos[alphaC + ph])/(2 M0),
+     (rv Sin[alphaC + ph])/(2 M0)}],
+  {ph, Subdivide[0, phiMaxC, 3000]}];
+
+Print["(c) \[Xi] = ", N[xiCapt/xiC, 4], " \[Xi]_c,  \[CurlyPhi]_capt = ", N[phiMaxC/Pi, 3], "\[Pi]"];
+
+
+(* ::Subsection::Closed:: *)
+(*Construction des trois panneaux*)
+
+
+xMinFig = -3;  xMaxFig = 5;
+yMinFig = -4;  yMaxFig = 3;
+
+makePhotonPanel66[xy_, eLabel_, title_] := Module[
+  {visiblePts, photStart, labelX, labelY},
+
+  visiblePts = Select[xy,
+    xMinFig <= #[[1]] <= xMaxFig && yMinFig <= #[[2]] <= yMaxFig &];
+
+  photStart = If[Length[visiblePts] > 0, First[visiblePts], {3.0, 2.5}];
+
+  labelX = Clip[photStart[[1]] - 0.55, {xMinFig + 0.3, xMaxFig - 0.5}];
+  labelY = Clip[photStart[[2]] + 0.40, {yMinFig + 0.4, yMaxFig - 0.2}];
+
+  Show[
+    Graphics[{
+      {GrayLevel[0.3], Thickness[0.001],
+       Line[{{xMinFig, 0}, {xMaxFig, 0}}],
+       Line[{{0, yMinFig}, {0, yMaxFig}}]},
+      {orbitCol, Thickness[0.003], Line[xy]},
+      {Black, Disk[{0, 0}, 1.0]},   (* r_h/(2M) = 1 *)
+      {White, Text[Style["Trou noir",
+         FontFamily -> "Times New Roman", Italic, 7], {0, 0}]},
+      {cF[1], PointSize[0.018], Point[photStart]},
+      {Black, Text[Style["Photon",
+         FontFamily -> "Times New Roman", FontWeight -> "Plain", 10],
+        {labelX, labelY}]},
+      {Black, Text[eLabel, {xMaxFig - 0.9, yMinFig + 0.3}]}}],
+    PlotRange   -> {{xMinFig, xMaxFig}, {yMinFig, yMaxFig}},
+    PlotRangeClipping -> True,
+    AspectRatio -> Automatic,
+    Frame       -> True, FrameStyle -> Directive[Black, 12],
+    PlotLabel   -> Style[title,
+       FontFamily -> "Times New Roman", FontSize -> 12, Black],
+    GridLines   -> None,
+    ImageSize   -> 400]];
+
+energyLabel[op_String] := With[{
+    e   = Style["E",   FontFamily -> "Times New Roman", Italic, 12, Black],
+    two = Style["2",   FontFamily -> "Times New Roman",
+                       FontWeight -> "Plain", 10, Black],
+    v   = Style["V",   FontFamily -> "Times New Roman", Italic, 12, Black],
+    m   = Style["max", FontFamily -> "Times New Roman", Italic,  9, Black]},
+  Row[{Superscript[e, two], " " <> op <> " ", Subscript[v, m]}]];
+
+labelA66 = energyLabel["<"];
+labelB66 = energyLabel["="];
+labelC66 = energyLabel[">"];
+
+panelA66 = makePhotonPanel66[xyPar,  labelA66, "(a) Retour parabolique"];
+panelB66 = makePhotonPanel66[xyCirc, labelB66, "(b) Orbite circulaire instable"];
+panelC66 = makePhotonPanel66[xyCapt, labelC66, "(c) Capture gravitationnelle"];
+
+fig66 = GraphicsRow[{panelA66, panelB66, panelC66},
+                    ImageSize -> 1300, Spacings -> 30];
+saveFig[fig66, "fig66_orbites_photons"];
+
+
+(* ::Section::Closed:: *)
+(*5. Figure 6.7 \[LongDash] Diagramme de phase T_r vs r_{0r} (RN-AdS)*)
+
+
+(* Lien trajectoires photons / transition de phase RN-AdS [Wei et al., ref [34]]
+   T_RN(r_+,P) = (1/4\[Pi]r_+)(1 - Q^2/r_+^2 + 8\[Pi]Pr_+^2)
+   M(r_+,P)    = r_+/2 + Q^2/(2r_+) + (4\[Pi]/3)Pr_+^3
+   r_0(r_+,P)  = (3M + \[Sqrt](9M^2-8Q^2))/2   [Eq. 6.47]
+   Grandeurs reduites : T_r = T/T_c,  r_0r = r_0/r_{0c} *)
+
+QV     = 1.0;
+rcRN67 = N[Sqrt[6] QV];
+PcRN67 = N[1/(96 Pi QV^2)];
+TcRN67 = N[Sqrt[6]/(18 Pi QV)];
+
+MRN67[rpv_, Pv_]    := rpv/2 + QV^2/(2 rpv) + (4 Pi/3) Pv rpv^3;
+TRN67[rpv_, Pv_]    := (1/(4 Pi rpv))(1 - QV^2/rpv^2 + 8 Pi Pv rpv^2);
+r0Phot67[rpv_, Pv_] := With[{Mv = MRN67[rpv, Pv]},
+  (3 Mv + Sqrt[9 Mv^2 - 8 QV^2])/2];
+
+(* r_+,min(P) : solution de dT/dr_+|_P = 0 *)
+rExtrem67[Pv_] := Module[{aP = 8 Pi Pv, bP = 1, cP = -QV^2},
+  Sqrt[(-bP + Sqrt[bP^2 - 4 aP cP])/(2 aP)]];
+
+Mc67  = MRN67[rcRN67, PcRN67];
+r0c67 = r0Phot67[rcRN67, PcRN67];
+
+Print["r_{+c} = ", N[rcRN67, 5], ",  P_c = ", N[PcRN67, 6],
+      ",  T_c = ", N[TcRN67, 6]];
+Print["M_c = 2\[Sqrt]6/3 = ", N[Mc67, 5], ",  r_{0c} = \[Sqrt]6+2 = ", N[r0c67, 5]];
+
+(* Balayage de r_+ depuis rExtrem(P) jusqu'a 8M pour chaque isobare *)
+makeBranch67[Pr_] := Module[{Pv, rpMin, rpArr, pts},
+  Pv    = Pr PcRN67;
+  rpMin = rExtrem67[Pv] 1.002;
+  rpArr = Subdivide[rpMin, 8.0, 6000];
+  pts   = Table[
+    With[{Tr  = TRN67[rp, Pv]/TcRN67,
+          r0r = r0Phot67[rp, Pv]/r0c67},
+      If[NumericQ[Tr] && NumericQ[r0r] && Tr > 0 && r0r > 0,
+         {r0r, Tr}, Nothing]],
+    {rp, rpArr}];
+  DeleteCases[pts, Nothing]];
+
+branchSubC67 = makeBranch67[0.8];   (* P < Pc : non-monotone *)
+branchCrit67 = makeBranch67[1.0];   (* P = Pc : point critique *)
+branchSupC67 = makeBranch67[1.5];   (* P > Pc : monotone *)
+
+(* Extrema locaux de T_r(r_0r) pour P < Pc : r_02 (max local), r_01 (min local) *)
+extremaLoc67 = Module[{rs, Ts, dT, sc, scFilt},
+  rs     = First /@ branchSubC67;
+  Ts     = Last  /@ branchSubC67;
+  dT     = Differences[Ts]/Differences[rs];
+  sc     = Flatten[Position[Differences[Sign[dT]], _?(# != 0 &)]];
+  scFilt = Select[sc, 0.5 < rs[[#]] < 4.5 &];
+  If[Length[scFilt] >= 2,
+    {{rs[[scFilt[[1]]]], Ts[[scFilt[[1]]]]},
+     {rs[[scFilt[[2]]]], Ts[[scFilt[[2]]]]}},
+    {}]];
+
+Print["Extrema P<Pc : ", N[extremaLoc67, 5]];
+
+labelRedPos   = {3.5,  1.005};
+labelBrownPos = {2.5,  1.050};
+labelBluePos  = {0.85, 1.18};
+
+fig67 = ListLinePlot[
+  {branchSubC67, branchCrit67, branchSupC67},
+  PlotStyle -> {
+    Directive[cF[2], Thickness[0.0035]],                    (* rouge, P<Pc *)
+    Directive[RGBColor[0.5, 0.31, 0.14], Thickness[0.0035]],(*brun, P=Pc  *)
+    Directive[cF[1], Thickness[0.0035]]},                   (* bleu, P>Pc  *)
+  PlotRange  -> {{0, 5}, {0.80, 1.22}},
+  FrameLabel -> {mathIt[Subscript[OverTilde["r"], "ps"], 14],
+                 mathIt[Subscript["T", "r"], 14]},
+  PlotLabel  -> mathPl[Row[{"Diagramme de phase ", Subscript["T", "r"],
+                            "\[LongDash]", Subscript[OverTilde["r"], "ps"],
+                            "  \[LongDash]  Trou noir RN-AdS (Q=1)"}], 13],
+  Frame      -> True,
+  GridLines  -> None,
+  Epilog -> {
+    GrayLevel[0.35], Dashing[{0.018, 0.005, 0.003, 0.005}],
+    Thickness[0.0010], InfiniteLine[{0, 1}, {1, 0}],   (* T_r = 1 *)
+    Black,
+    Text[mathIt["Point critique", 10], {2.00, 1.005}],
+    Text[mathIt[Row[{"P < ", Subscript["P", "c"]}], 12], labelRedPos],
+    Text[mathIt[Row[{"P = ", Subscript["P", "c"]}], 12], labelBrownPos],
+    Text[mathIt[Row[{"P > ", Subscript["P", "c"]}], 12], labelBluePos],
+    If[Length[extremaLoc67] >= 2,
+      With[{r02 = extremaLoc67[[1, 1]], T02 = extremaLoc67[[1, 2]],
+            r01 = extremaLoc67[[2, 1]], T01 = extremaLoc67[[2, 2]],
+            Tcoex = Mean[{extremaLoc67[[1, 2]], extremaLoc67[[2, 2]]}]},
+        {Black, Dashing[0.01], Thickness[0.0008],
+         Line[{{r02, 0.80}, {r02, Tcoex}}],
+         Line[{{r01, 0.80}, {r01, Tcoex}}],
+         Text[mathIt[Subscript[OverTilde["r"], "ps,2"], 11],
+              {r02, 0.810}],
+         Text[mathIt[Subscript[OverTilde["r"], "ps,1"], 11],
+              {r01, 0.810}],
+         GrayLevel[0.5], Dashing[0.006], Thickness[0.0006],
+         Line[{{r02, Tcoex}, {r01, Tcoex}}],
+         Black, Text[
+           Style[Subscript["T", "coex"], FontFamily -> "Times New Roman",
+                 Italic, FontWeight -> "Plain", 10, GrayLevel[0.4]],
+           {r01 - 0.30, Tcoex + 0.009}]}],
+      {}]},
+  ImageSize -> 720];
+
+saveFig[fig67, "fig67_Tr_r0r_diagram"];
+
+
+(* ::Section::Closed:: *)
+(*6. Derniere orbite circulaire stable (ISCO) -- RN-AdS*)
+
+
+(* ::Subsection::Closed:: *)
+(*6.1  Condition ISCO et verifications analytiques*)
+
+
+(* Metrique RN-AdS et derivees explicites (charge QV = 1) ; P = pression *)
+fIS[r_, Mv_, Pv_]   := 1 - 2 Mv/r + QV^2/r^2 + (8 Pi/3) Pv r^2;
+fpIS[r_, Mv_, Pv_]  := 2 Mv/r^2 - 2 QV^2/r^3 + (16 Pi/3) Pv r;
+fppIS[r_, Mv_, Pv_] := -4 Mv/r^3 + 6 QV^2/r^4 + (16 Pi/3) Pv;
+(* Potentiel effectif massif (epsilon = 1) *)
+VeffMass[r_, L_, Mv_, Pv_] := fIS[r, Mv, Pv] (1 + L^2/r^2);
+(* Condition ISCO independante de L : r f f'' + 3 f f' - 2 r (f')^2 = 0 *)
+iscoCond[r_, Mv_, Pv_] := 
+  r fIS[r, Mv, Pv] fppIS[r, Mv, Pv] + 3 fIS[r, Mv, Pv] fpIS[r, Mv, Pv] - 2 r fpIS[r, Mv, Pv]^2;
+(* Moment angulaire d'une orbite circulaire (Veff' = 0) *)
+LcircIS[r_, Mv_, Pv_] := 
+  Sqrt[fpIS[r, Mv, Pv] r^3 / (2 fIS[r, Mv, Pv] - r fpIS[r, Mv, Pv])];
+(* Recherche robuste de racines : balayage de changements de signe + FindRoot *)
+rootScan[g_, a_, b_, n_] := Module[{xs, v, idx, x},
+  xs  = N[Subdivide[a, b, n]];
+  v   = Map[g, xs];
+  idx = Select[Range[n], (v[[#]] v[[# + 1]] < 0) &];
+  Table[x /. FindRoot[g[x], {x, xs[[i]], xs[[i + 1]]}], {i, idx}]];
+(* Horizon : plus grande racine positive de f = 0 *)
+rPlusIS[Mv_, Pv_] := Max[rootScan[fIS[#, Mv, Pv] &, 0.05, 100, 4000]];
+rIscoIS[Mval_, Pval_] := Module[{rplus, solRoots, eqISCO},
+  rplus = rPlusIS[Mval, Pval];
+  eqISCO = D[LcircIS[r, Mval, Pval], r] == 0;
+  solRoots = r /. NSolve[{eqISCO, r > rplus}, r, Reals];
+  If[Length[solRoots] > 0,
+     Min[solRoots],
+     r /. FindRoot[eqISCO, {r, rplus + 1.0}]
+  ]
+];
+(* Verifications analytiques (charge locale Qc) *)
+iscoCheck[Mv_, Qc_, Pv_] := Module[{eqfun, sols},
+  eqfun = Function[x, Module[{f, fp, fpp},
+      f   = 1 - 2 Mv/x + Qc^2/x^2 + (8 Pi/3) Pv x^2;
+      fp  = 2 Mv/x^2 - 2 Qc^2/x^3 + (16 Pi/3) Pv x;
+      fpp = -4 Mv/x^3 + 6 Qc^2/x^4 + (16 Pi/3) Pv;
+      x f fpp + 3 f fp - 2 x fp^2]];
+  sols = rootScan[eqfun, 2.5, 60, 5000];
+  If[sols === {}, Missing[], Min[sols]]];
+Print["Controle Schwarzschild (Q=0, P=0) : r_ISCO = ", N[iscoCheck[1, 0, 0], 6], " M  (theo 6)"];
+Print["Controle RN extremal   (Q=M, P=0) : r_ISCO = ", N[iscoCheck[1, 1, 0], 6], " M  (theo 4)"];
+
+
+(* ::Subsection::Closed:: *)
+(*6.2  Trou noir critique RN-AdS (Q=1) et tableau*)
+
+
+rpCritIS  = N[Sqrt[6]];
+MCritIS   = MRN67[rpCritIS, PcRN67];
+rPlusCrit = rPlusIS[MCritIS, PcRN67];
+(* Calcul direct et propre *)
+rIscoCrit = rIscoIS[MCritIS, PcRN67];
+LIscoCrit = LcircIS[rIscoCrit, MCritIS, PcRN67];
+
+Print["RN-AdS critique (r+ = Sqrt[6], P = Pc, M = ", N[MCritIS, 5], ") :"];
+Print["  r_ISCO = ", N[rIscoCrit, 5], " (= ", N[rIscoCrit/MCritIS, 4],
+      " M),  L_ISCO = ", N[LIscoCrit, 5]];
+
+Print["\nTableau r_ISCO (Q=1) :"];
+Print["  r_+        P_r=0.8    P_r=1.0    P_r=1.2"];
+Do[
+   Print["  ", NumberForm[N[rpv], {6, 3}], "   ",
+         NumberForm[N[rIscoIS[MRN67[rpv, 0.8 PcRN67], 0.8 PcRN67]], {7, 3}], "   ",
+         NumberForm[N[rIscoIS[MRN67[rpv, 1.0 PcRN67], 1.0 PcRN67]], {7, 3}], "   ",
+         NumberForm[N[rIscoIS[MRN67[rpv, 1.2 PcRN67], 1.2 PcRN67]], {7, 3}]],
+   {rpv, {N[Sqrt[6]], 3.0, 4.0}}
+];
+
+
+(* ::Subsection::Closed:: *)
+(*6.3  Figure 6.8 : fusion ISCO (Veff) + r_ISCO(r+)*)
+
+
+(* panneau a : Potentiel effectif *)
+figIscoA = Plot[
+  Evaluate[{
+    VeffMass[r, 1.10 LIscoCrit, MCritIS, PcRN67],
+    VeffMass[r, 1.00 LIscoCrit, MCritIS, PcRN67],
+    VeffMass[r, 0.90 LIscoCrit, MCritIS, PcRN67]
+  }],
+  {r, 1.005 rPlusCrit, 14},
+  PlotStyle -> {
+    Directive[cF[2], Thickness[0.004]],
+    Directive[Black, Thickness[0.004]],
+    Directive[cF[1], Dashing[{0.02, 0.01}], Thickness[0.004]]
+  },
+  PlotRange -> {{rPlusCrit - 0.3, 14}, {0, 14}},
+  PlotRangeClipping -> False,
+  ImagePadding -> {{Automatic, Automatic}, {55, Automatic}},
+  Frame -> True, GridLines -> None,
+  FrameLabel -> {{mathIt[Subscript["V", "eff"], 14], None}, {mathIt["r", 14], None}},
+  PlotLabel -> mathPl["(a) Fusion des orbites circulaires a l'ISCO\n(RN-AdS critique : Q=1, P=Pc, r_+ = Sqrt[6])", 12],
+  PlotLegends -> Placed[
+    LineLegend[
+      {Directive[cF[2], Thickness[0.004]],
+       Directive[Black, Thickness[0.004]],
+       Directive[cF[1], Dashing[{0.02, 0.01}], Thickness[0.004]]},
+      {Row[{"L = 1.10 ", mathIt[Subscript["L", "ISCO"], 10]}],
+       Row[{"L = ", mathIt[Subscript["L", "ISCO"], 10]}],
+       Row[{"L = 0.90 ", mathIt[Subscript["L", "ISCO"], 10]}]},
+      LegendMarkerSize -> 14,
+      Spacings -> 0.05
+    ],
+    {0.15, 0.90}
+  ],
+  Epilog -> {
+    GrayLevel[0.5], Dashing[0.006],
+    Line[{{rPlusCrit, 0}, {rPlusCrit, 14}}],
+    Text[mathIt[Subscript["r", "+"], 11], {rPlusCrit + 0.1, -0.2}],
+    Black, PointSize[0.020],
+    Point[{rIscoCrit, VeffMass[rIscoCrit, LIscoCrit, MCritIS, PcRN67]}],
+    Arrowheads[0.025],
+    Arrow[{{rIscoCrit + 2.0, VeffMass[rIscoCrit, LIscoCrit, MCritIS, PcRN67] + 0.6},
+           {rIscoCrit + 0.2, VeffMass[rIscoCrit, LIscoCrit, MCritIS, PcRN67] + 0.05}}],
+    Text[mathIt[Subscript["r", "ISCO"], 13],
+         {rIscoCrit + 2.7, VeffMass[rIscoCrit, LIscoCrit, MCritIS, PcRN67] + 0.9}]
+  },
+  ImageSize -> 430
+];
+
+(* panneau b : r_ISCO vs r_+ *)
+rpDataIS = Range[1.6, 6.0, 0.15];
+iscoCurveIS[Pr_] := Select[
+  Table[
+    {rpv, Chop[rIscoIS[MRN67[rpv, Pr PcRN67], Pr PcRN67]]},
+    {rpv, rpDataIS}
+  ],
+  NumericQ[Last[#]] &
+];
+figIscoB = ListLinePlot[
+  {iscoCurveIS[0.8], iscoCurveIS[1.0], iscoCurveIS[1.2]},
+  PlotStyle -> {
+    Directive[cF[2], Thickness[0.004]],
+    Directive[RGBColor[0.5, 0.31, 0.14], Thickness[0.004]],
+    Directive[cF[1], Thickness[0.004]]
+  },
+  PlotRange -> All,
+  Frame -> True, GridLines -> None,
+  FrameLabel -> {{mathIt[Subscript["r", "ISCO"], 14], None}, {mathIt[Subscript["r", "+"], 14], None}},
+  PlotLabel -> mathPl["(b) Rayon de l'ISCO vs rayon d'horizon (Q=1)", 12],
+  PlotLegends -> Placed[
+    LineLegend[
+      {Directive[cF[2], Thickness[0.004]],
+       Directive[RGBColor[0.5, 0.31, 0.14], Thickness[0.004]],
+       Directive[cF[1], Thickness[0.004]]},
+      {Row[{mathIt[Subscript["P", "r"], 11], " = 0.8"}],
+       Row[{mathIt[Subscript["P", "r"], 11], " = 1.0"}],
+       Row[{mathIt[Subscript["P", "r"], 11], " = 1.2"}]},
+      LegendMarkerSize -> 18,
+      Spacings -> 0.1
+    ],
+    {0.10, 0.85}
+  ],
+  ImageSize -> 430
+];
+figIsco = GraphicsRow[{figIscoA, figIscoB}, Spacings -> 18, ImageSize -> 900];
+saveFig[figIsco, "fig68_isco_rnads"];
+
+
+(* ::Section::Closed:: *)
+(*7. Tableau recapitulatif*)
+
+
+tabHeader = {
+  Style["Figure",             Bold, FontFamily -> "Times New Roman", 11],
+  Style["Cas",                Bold, FontFamily -> "Times New Roman", 11],
+  Style["Parametres",         Bold, FontFamily -> "Times New Roman", 11],
+  Style["Resultats numeriques",   Bold, FontFamily -> "Times New Roman", 11],
+  Style["Signature physique",     Bold, FontFamily -> "Times New Roman", 11]};
+tabCell[s_] := Style[s, FontFamily -> "Times New Roman", 10, Black];
+tabRows = {
+  {tabCell["6.4 (a)"], tabCell["Veff massif"],
+   tabCell["L = 4.2 M, \[Epsilon] = 1"],
+   tabCell[Row[{"r\:208b = ", N[rInner, 4], " M, r\:208a = ", N[rOuter, 4], " M\n",
+                "V(C\:1d62) = ", N[VInner, 5], ", V(C\:209b) = ", N[VOuter, 5]}]],
+   tabCell["4 regimes selon E\.b2"]},
+  {tabCell["6.4 (b)"], tabCell["Veff photon"],
+   tabCell["L = 4.35 M, \[Epsilon] = 0"],
+   tabCell[Row[{"r_ps = 3 M, V_max = ", N[VPhMax, 5]}]],
+   tabCell["Maximum unique a r=3M"]},
+  {tabCell["6.5"], tabCell["Orbite massive"],
+   tabCell[Row[{"a = ", aOrb, " M, e = ", eOrb}]],
+   tabCell[Row[{"r_per = ", N[1/Max[uFn65 /@ phiTab65], 4], " M\n",
+                "r_apo ~ ", N[1/Min[uFn65 /@ phiTab65], 4], " M\n",
+                "\[CapitalDelta]\[CurlyPhi]_theo = ", N[DeltaPhiTheo, 4], " rad/orbite"}]],
+   tabCell["Precession du periapside"]},
+  {tabCell["6.6 (a)"], tabCell["Retour parabolique"],
+   tabCell[Row[{"\[Xi] = ", N[xiPar/xiC, 4], " \[Xi]_c, alphaA=-123 deg"}]],
+   tabCell[Row[{"r_per = ", N[1/uPerPar, 4], " M\n",
+                "\[CurlyPhi]_asy = ", N[phiAsy, 4], " rad\n",
+                "\[CapitalDelta]\[CurlyPhi]_tot = ", N[2 phiAsy - Pi, 4], " rad"}]],
+   tabCell["E\.b2 < V_max : diffusion"]},
+  {tabCell["6.6 (b)"], tabCell["Orbite circulaire instable"],
+   tabCell[Row[{"\[Xi] = \[Xi]_c, r\:2080 = ", N[r0B, 3], " M"}]],
+   tabCell[Row[{"u\:2080 = ", N[uStartB, 4], "/M\n",
+                "\[CurlyPhi]_max = ", N[phiMaxB/Pi, 3], "\[Pi]"}]],
+   tabCell["E\.b2 = V_max : asymptote r\[Rule]3M"]},
+  {tabCell["6.6 (c)"], tabCell["Capture gravitationnelle"],
+   tabCell[Row[{"\[Xi] = ", N[xiCapt/xiC, 4], " \[Xi]_c, r\:2080 = ", N[r0C, 3], " M"}]],
+   tabCell[Row[{"u\:2080 = ", N[uStartC, 4], "/M\n",
+                "\[CurlyPhi]_capt = ", N[phiMaxC/Pi, 3], "\[Pi]"}]],
+   tabCell["E\.b2 > V_max : plongee horizon"]},  {tabCell["6.7"], tabCell["Phases RN-AdS"],
+   tabCell["Q = 1, P_r \[Element] {0.8, 1.0, 1.5}"],
+   tabCell[Row[{"r_{+c} = ", N[rcRN67, 4], "\n",
+                "P_c = ", N[PcRN67, 4], "\n",
+                "T_c = ", N[TcRN67, 4], "\n",
+                "M_c = ", N[Mc67, 4], ", r\:2080c = ", N[r0c67, 4]}]],
+   tabCell["P < P_c : non-monotonie r\:2080\:2081, r\:2080\:2082"]},
+  {tabCell["6.8 (a)"], tabCell["Fusion ISCO RN-AdS"],
+   tabCell[Row[{"Q = 1, P = P_c, r_+ = ", N[Sqrt[6], 4]}]],
+   tabCell[Row[{"M_c = ", N[MCritIS, 4], "\n",
+                "r_ISCO = ", N[rIscoCrit, 4], "\n",
+                "L_ISCO = ", N[LIscoCrit, 4]}]],
+   tabCell["Point d'inflexion (Veff'' = 0)"]},
+  {tabCell["6.8 (b)"], tabCell["Rayon ISCO vs r_+"],
+   tabCell["Q = 1, P_r \[Element] {0.8, 1.0, 1.2}"],
+   tabCell[Row[{"Schw (Q=0) : r_ISCO = 6M\n",
+                "Extremal (Q=M) : r_ISCO = 4M\n",
+                "r_ISCO cro\[IHat]t avec r_+"}]],
+   tabCell["S\[EAcute]paration des orbites"]}
+};
+tabSynthese = Grid[
+  Prepend[tabRows, tabHeader],
+  Frame    -> All,
+  Background -> {None, {{LightGray, None}, None}},
+  Alignment  -> {Left, Center},
+  Spacings   -> {1.5, 1},
+  Dividers   -> {All, {2 -> Black, All}},
+  FrameStyle -> Directive[Black, Thickness[0.7]],
+  ItemSize   -> {{6, 14, 16, 22, 18}}];
+Print["\n--- Tableau recapitulatif (Figures 6.4 a 6.8) ---\n"];
+Print[tabSynthese];
+Print["\nFigures exportees dans : ", outDir];
+
+
+
+
