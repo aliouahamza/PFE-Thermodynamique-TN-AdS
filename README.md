@@ -203,7 +203,7 @@ https://hamza-alioua.vercel.app/
 
 **LinkedIn :**
 
-https://linkedin.com/in/hamza-alioua
+[https://linkedin.com/in/hamza-alioua](https://www.linkedin.com/in/hamza-alioua-b7511638a/)
 
 ---
 
